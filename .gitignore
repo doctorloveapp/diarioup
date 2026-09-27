@@ -1,0 +1,139 @@
+# Jelly Drop — generated, local and sensitive files
+
+# Dart / Flutter tool state
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter_tool_state
+build/
+coverage/
+lcov.info
+*.lcov
+coverage.json
+test-results/
+reports/
+benchmark_reports/
+*.physics-profile.json
+*.profdata
+
+# FVM — commit .fvmrc, never the SDK checkout or local cache
+.fvm/flutter_sdk
+.fvm/versions/
+.fvm/cache/
+.fvm/fvm_config.json
+
+# Android / Gradle local state
+android/.gradle/
+android/.cxx/
+android/app/.cxx/
+android/local.properties
+# TopSpotApps release-signing material: local/CI only, never versioned.
+android/key.properties
+android/upload-keystore.jks
+android/**/captures/
+android/app/debug/
+android/app/profile/
+android/app/release/
+*.jks
+*.keystore
+*.pem
+*.p12
+*.der
+*.apk
+*.aab
+*.apks
+
+# Apple platform generated state
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.*
+macos/Pods/
+macos/.symlinks/
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
+**/xcuserdata/
+*.xcuserstate
+
+# Desktop platform generated state
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# VS Code — keep only reviewed team configuration
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Editors
+*.swp
+*.swo
+*.bak
+*~
+
+# OS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Environment and secrets — commit only documented examples
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+
+# Logs, crash dumps and profiling output
+*.log
+*.dmp
+*.hprof
+*.trace
+*.timeline.json
+*.cpuprofile
+*.heapprofile
+
+# Temporary files and directories
+.tmp/
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
+
+# Shader / Impeller / Skia transient artifacts
+.shader_cache/
+**/.shader_cache/
+shader_cache/
+impeller_cache/
+**/impeller_cache/
+*.spv
+*.spirv
+*.sksl.json
+*.shaderbundle
+*.shadercache
+
+# Native build systems
+.ninja_deps
+.ninja_log
+CMakeFiles/
+CMakeCache.txt
+Documenti
+# Generated Dart source is intentionally committed for reproducible app builds.
+# Do not ignore lib/**/*.g.dart or lib/**/*.freezed.dart.
+Documenti
+linee_guida_DiarioUp.md
