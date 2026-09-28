@@ -1,4 +1,4 @@
-# Jelly Drop — generated, local and sensitive files
+# DiarioUp — file locali, generati e sensibili
 
 # Dart / Flutter tool state
 .dart_tool/
@@ -19,7 +19,7 @@ benchmark_reports/
 *.physics-profile.json
 *.profdata
 
-# FVM — commit .fvmrc, never the SDK checkout or local cache
+# FVM — versionare solo il file di configurazione scelto dal team
 .fvm/flutter_sdk
 .fvm/versions/
 .fvm/cache/
@@ -30,9 +30,15 @@ android/.gradle/
 android/.cxx/
 android/app/.cxx/
 android/local.properties
-# TopSpotApps release-signing material: local/CI only, never versioned.
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+# Android / Gradle e artefatti di release
 android/key.properties
-android/upload-keystore.jks
+android/signing/*.properties
+android/signing/*.jks
+android/signing/*.keystore
+android/signing/*.p12
+android/signing/*.pem
+android/signing/*.der
 android/**/captures/
 android/app/debug/
 android/app/profile/
@@ -64,7 +70,7 @@ macos/Flutter/GeneratedPluginRegistrant.swift
 linux/flutter/ephemeral/
 windows/flutter/ephemeral/
 
-# IntelliJ IDEA / Android Studio
+# IDE
 .idea/
 *.iml
 *.ipr
@@ -91,14 +97,16 @@ out/
 Thumbs.db
 Desktop.ini
 
-# Environment and secrets — commit only documented examples
+# Environment e segreti — commit solo esempi documentati
 .env
 .env.*
 !.env.example
 secrets/
 credentials/
+*.secret
+*.credentials
 
-# Logs, crash dumps and profiling output
+# Log, dump e profiling
 *.log
 *.dmp
 *.hprof
@@ -107,7 +115,7 @@ credentials/
 *.cpuprofile
 *.heapprofile
 
-# Temporary files and directories
+# Cache temporanee, shader e file locali
 .tmp/
 tmp/
 temp/
@@ -132,8 +140,9 @@ impeller_cache/
 .ninja_log
 CMakeFiles/
 CMakeCache.txt
-Documenti
+
 # Generated Dart source is intentionally committed for reproducible app builds.
 # Do not ignore lib/**/*.g.dart or lib/**/*.freezed.dart.
+
 Documenti
-linee_guida_DiarioUp.md
+piano_diarioup_fasi.md

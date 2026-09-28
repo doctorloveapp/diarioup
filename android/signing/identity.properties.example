@@ -1,0 +1,8 @@
+# Metadati pubblici del certificato APK DiarioUp.
+# Questo file è un template documentale: non contiene credenziali né sostituisce
+# il keystore privato fornito dalla macchina di release o dalla CI.
+certificateOwnerName=Dan King
+certificateOwnerStreet=Via Roma 1
+certificateOwnerCity=Roma
+certificateOwnerCountry=IT
+certificateSubject=CN=Dan King, STREET=Via Roma 1, L=Roma, C=IT

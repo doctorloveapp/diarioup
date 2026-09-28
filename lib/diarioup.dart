@@ -1,0 +1,22 @@
+library;
+
+export 'src/data/auth/didup_auth_service.dart';
+export 'src/data/auth/flutter_secure_session_store.dart';
+export 'src/data/auth/session_codec.dart';
+export 'src/data/auth/session.dart';
+export 'src/data/auth/session_store.dart';
+export 'src/data/client/didup_client.dart';
+export 'src/data/network/didup_network_client.dart';
+export 'src/data/normalization/homework_identity_registry.dart';
+export 'src/data/normalization/homework_normalizer.dart';
+export 'src/data/protocol/didup_protocol_config.dart';
+export 'src/data/repositories/didup_repository_impl.dart';
+export 'src/domain/auth/auth_credentials.dart';
+export 'src/domain/auth/auth_result.dart';
+export 'src/domain/auth/student_profile.dart';
+export 'src/domain/errors/didup_failure.dart';
+export 'src/domain/homework/homework.dart';
+export 'src/domain/homework/school_date.dart';
+export 'src/domain/repositories/didup_repository.dart';
+export 'src/domain/use_cases/authenticate_with_didup.dart';
+export 'src/domain/use_cases/fetch_didup_homework.dart';
