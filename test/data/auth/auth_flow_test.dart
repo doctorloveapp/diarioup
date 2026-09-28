@@ -1,5 +1,6 @@
 import 'package:diarioup/diarioup.dart';
 import 'package:dio/dio.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fakes.dart';
@@ -81,13 +82,17 @@ void main() {
       final network = DidupNetworkClient.create(config: config, dio: dio);
       final store = MemorySessionStore();
       final authService = DioDidupAuthService(networkClient: network);
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
       final repository = DidupRepositoryImpl(
         authService: authService,
         client: DidupClient(networkClient: network, sessionStore: store),
+        database: database,
         sessionStore: store,
         normalizer: HomeworkNormalizer(
           identityRegistry: InMemoryHomeworkIdentityRegistry(),
         ),
+        adapterVersion: 'contract-test',
       );
       final password = String.fromCharCodes(
         List<int>.generate(48, (int index) => 33 + (index * 17) % 90),

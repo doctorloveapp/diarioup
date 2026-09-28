@@ -30,7 +30,8 @@ final class LoginController extends Notifier<LoginState> {
   }) async {
     state = const LoginState(isLoading: true);
     try {
-      final result = await ref.read(authenticateWithDidupProvider)(
+      final authenticate = await ref.read(authenticateWithDidupProvider.future);
+      final result = await authenticate(
         AuthCredentials(
           schoolCode: schoolCode,
           username: username,
@@ -45,6 +46,8 @@ final class LoginController extends Notifier<LoginState> {
     } on DidupFailure catch (failure) {
       state = LoginState(errorMessage: failure.message);
     } on ArgumentError {
+      state = const LoginState(errorMessage: AppCopy.genericLoginError);
+    } on Object {
       state = const LoginState(errorMessage: AppCopy.genericLoginError);
     }
   }

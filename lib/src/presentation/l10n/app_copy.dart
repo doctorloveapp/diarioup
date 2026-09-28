@@ -36,7 +36,17 @@ abstract final class AppCopy {
   static const String demoEmptyTitle = 'La base è pronta';
   static const String demoEmptyBody =
       'La sincronizzazione popolerà qui i compiti. In demo usiamo soltanto dati sintetici.';
-  static const String syncStatus = 'Demo locale · nessun dato scolastico';
+  static const String syncStatus = 'Agenda locale aggiornata';
+  static const String syncInProgress = 'Sincronizzazione in corso';
+  static const String syncError = 'Sincronizzazione non riuscita';
+  static const String retry = 'Riprova';
+  static const String agendaLoadError =
+      'Non è stato possibile leggere l’agenda locale.';
+  static const String changedAfterCompletion =
+      'Modificato dopo il completamento';
+  static const String identityReview = 'Verifica richiesta';
+  static const String completionUpdateError =
+      'Impossibile aggiornare il completamento. Riprova.';
   static const String genericLoginError =
       'Accesso non riuscito. Controlla i dati e riprova.';
 }

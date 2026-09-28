@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/agenda/homework_agenda_item.dart';
+import '../../domain/homework/school_date.dart';
 import '../controllers/app_flow_controller.dart';
 import '../design_system/diarioup_tokens.dart';
 import '../l10n/app_copy.dart';
@@ -21,14 +23,18 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final profile = ref.watch(appFlowProvider).activeProfile;
     final pages = <Widget>[
-      _AgendaPanel(profileLabel: profile?.displayLabel ?? AppCopy.appName),
+      _AgendaPanel(
+        profileId: profile?.sourceProfileId,
+        profileLabel: profile?.displayLabel ?? AppCopy.appName,
+      ),
       const _PlaceholderPanel(
         icon: Icons.menu_book_outlined,
         title: AppCopy.subjects,
       ),
       _SettingsPanel(
         onSignOut: () async {
-          await ref.read(didupRepositoryProvider).logout();
+          final repository = await ref.read(didupRepositoryProvider.future);
+          await repository.logout();
           ref.read(appFlowProvider.notifier).signOut();
         },
       ),
@@ -87,13 +93,19 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 }
 
-final class _AgendaPanel extends StatelessWidget {
-  const _AgendaPanel({required this.profileLabel});
+final class _AgendaPanel extends ConsumerWidget {
+  const _AgendaPanel({required this.profileId, required this.profileLabel});
 
+  final String? profileId;
   final String profileLabel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = profileId;
+    if (id == null) return const SizedBox.shrink();
+    final agenda = ref.watch(homeworkAgendaProvider(id));
+    final sync = ref.watch(syncProfileProvider(id));
+    final status = ref.watch(syncStatusProvider(id));
     return ListView(
       padding: const EdgeInsets.all(DiarioUpSpacing.lg),
       children: <Widget>[
@@ -102,35 +114,207 @@ final class _AgendaPanel extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: DiarioUpSpacing.xs),
-        const _SyncStatus(),
+        _SyncStatus(
+          isLoading: sync.isLoading,
+          hasError: sync.hasError || status.value?.errorCode != null,
+          onRetry: () => ref.invalidate(syncProfileProvider(id)),
+        ),
         const SizedBox(height: DiarioUpSpacing.lg),
-        const _DayHeading(label: AppCopy.today, count: 0),
-        const SizedBox(height: DiarioUpSpacing.sm),
-        const _EmptyAgendaCard(),
-        const SizedBox(height: DiarioUpSpacing.lg),
-        const _DayHeading(label: AppCopy.tomorrow, count: 0),
-        const SizedBox(height: DiarioUpSpacing.lg),
-        const _DayHeading(label: AppCopy.nextDays, count: 0),
+        agenda.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, _) => _AgendaError(
+            onRetry: () {
+              ref.invalidate(homeworkAgendaProvider(id));
+              ref.invalidate(syncProfileProvider(id));
+            },
+          ),
+          data: (items) => _AgendaContent(
+            items: items,
+            onChanged: (item, value) async {
+              try {
+                final repository = await ref.read(
+                  didupRepositoryProvider.future,
+                );
+                await repository.setHomeworkCompleted(
+                  profileId: id,
+                  homeworkId: item.id,
+                  isDone: value,
+                );
+              } on Object {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text(AppCopy.completionUpdateError)),
+                );
+              }
+            },
+          ),
+        ),
       ],
     );
   }
 }
 
 final class _SyncStatus extends StatelessWidget {
-  const _SyncStatus();
+  const _SyncStatus({
+    required this.isLoading,
+    required this.hasError,
+    required this.onRetry,
+  });
+
+  final bool isLoading;
+  final bool hasError;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        const Icon(
-          Icons.check_circle_outline_rounded,
+        Icon(
+          hasError
+              ? Icons.sync_problem_rounded
+              : isLoading
+              ? Icons.sync_rounded
+              : Icons.check_circle_outline_rounded,
           size: 20,
-          color: DiarioUpColors.verdePetrolio,
+          color: hasError ? DiarioUpColors.ambra : DiarioUpColors.verdePetrolio,
         ),
         const SizedBox(width: DiarioUpSpacing.xs),
-        Text(AppCopy.syncStatus, style: Theme.of(context).textTheme.bodyMedium),
+        Expanded(
+          child: Text(
+            hasError
+                ? AppCopy.syncError
+                : isLoading
+                ? AppCopy.syncInProgress
+                : AppCopy.syncStatus,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        if (hasError)
+          TextButton(onPressed: onRetry, child: const Text(AppCopy.retry)),
       ],
+    );
+  }
+}
+
+final class _AgendaContent extends StatelessWidget {
+  const _AgendaContent({required this.items, required this.onChanged});
+
+  final List<HomeworkAgendaItem> items;
+  final Future<void> Function(HomeworkAgendaItem item, bool value) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const _EmptyAgendaCard();
+    final now = DateTime.now();
+    final today = SchoolDate(now.year, now.month, now.day);
+    final tomorrowDate = now.add(const Duration(days: 1));
+    final tomorrow = SchoolDate(
+      tomorrowDate.year,
+      tomorrowDate.month,
+      tomorrowDate.day,
+    );
+    final todayItems = items.where((item) => item.dueOn == today).toList();
+    final tomorrowItems = items
+        .where((item) => item.dueOn == tomorrow)
+        .toList();
+    final otherItems = items
+        .where((item) => item.dueOn != today && item.dueOn != tomorrow)
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _AgendaSection(
+          label: AppCopy.today,
+          items: todayItems,
+          onChanged: onChanged,
+        ),
+        const SizedBox(height: DiarioUpSpacing.lg),
+        _AgendaSection(
+          label: AppCopy.tomorrow,
+          items: tomorrowItems,
+          onChanged: onChanged,
+        ),
+        const SizedBox(height: DiarioUpSpacing.lg),
+        _AgendaSection(
+          label: AppCopy.nextDays,
+          items: otherItems,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+final class _AgendaSection extends StatelessWidget {
+  const _AgendaSection({
+    required this.label,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String label;
+  final List<HomeworkAgendaItem> items;
+  final Future<void> Function(HomeworkAgendaItem item, bool value) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _DayHeading(label: label, count: items.length),
+        if (items.isNotEmpty) const SizedBox(height: DiarioUpSpacing.sm),
+        for (final item in items) ...<Widget>[
+          Card(
+            child: CheckboxListTile(
+              value: item.isDone,
+              onChanged: (value) async {
+                if (value != null) await onChanged(item, value);
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(
+                item.text,
+                style: item.isDone
+                    ? const TextStyle(decoration: TextDecoration.lineThrough)
+                    : null,
+              ),
+              subtitle: Text(
+                <String>[
+                  ?item.subjectName,
+                  if (item.changedAfterCompletion)
+                    AppCopy.changedAfterCompletion,
+                  if (item.requiresIdentityReview) AppCopy.identityReview,
+                ].join(' · '),
+              ),
+            ),
+          ),
+          const SizedBox(height: DiarioUpSpacing.xs),
+        ],
+      ],
+    );
+  }
+}
+
+final class _AgendaError extends StatelessWidget {
+  const _AgendaError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(DiarioUpSpacing.lg),
+        child: Column(
+          children: <Widget>[
+            const Text(AppCopy.agendaLoadError, textAlign: TextAlign.center),
+            const SizedBox(height: DiarioUpSpacing.sm),
+            FilledButton.tonal(
+              onPressed: onRetry,
+              child: const Text(AppCopy.retry),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
