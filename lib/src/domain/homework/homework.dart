@@ -2,7 +2,11 @@ import 'school_date.dart';
 
 enum HomeworkOrigin { argo, manual }
 
-enum HomeworkIdentityConfidence { sourceIdentifier, persistentParentMapping }
+enum HomeworkIdentityConfidence {
+  sourceIdentifier,
+  persistentParentMapping,
+  localIdentifier,
+}
 
 enum SourceRecordOperation { insertOrUpdate, delete }
 

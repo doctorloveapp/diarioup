@@ -33,8 +33,9 @@ successive.
 
 ## Schema e migrazioni
 
-La versione iniziale è `schemaVersion = 1`. Lo snapshot verificabile è in
-`drift_schemas/app_database/drift_schema_v1.json`; `build.yaml` configura Drift
+Lo schema corrente è `schemaVersion = 2`: la migrazione da v1 aggiunge la nota
+personale al compito senza perdere contenuto o checklist. Gli snapshot
+verificabili sono in `drift_schemas/app_database/`; `build.yaml` configura Drift
 per produrre i successivi snapshot. Ogni aumento di versione deve:
 
 1. aggiungere il passo esplicito in `AppDatabase.migration`;
@@ -50,7 +51,7 @@ Nota toolchain: la combinazione locale Flutter 3.38 / Dart 3.10 esegue app,
 test e build native, ma `build_runner` non sa ancora compilare un build hook
 Native Assets durante la rigenerazione. Le future modifiche allo schema vanno
 quindi generate con Dart 3.11 o successivo; i sorgenti generati e lo snapshot
-della versione 1 sono già inclusi nel repository.
+delle versioni 1 e 2 sono inclusi nel repository.
 
 ## Verifiche automatiche
 

@@ -48,6 +48,11 @@ void main() {
         homeworkId: stableId,
         isDone: true,
       );
+      await repository.updateHomeworkNote(
+        profileId: 'profile-1',
+        homeworkId: stableId,
+        note: 'Portare il quaderno',
+      );
 
       source.response = _dashboard('Testo modificato');
       await repository.sync(profileId: 'profile-1');
@@ -59,6 +64,7 @@ void main() {
       expect(items.single.text, 'Testo modificato');
       expect(items.single.isDone, isTrue);
       expect(items.single.changedAfterCompletion, isTrue);
+      expect(items.single.personalNote, 'Portare il quaderno');
     },
   );
 }

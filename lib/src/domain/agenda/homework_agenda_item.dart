@@ -1,4 +1,5 @@
 import '../homework/school_date.dart';
+import '../homework/homework.dart';
 
 final class HomeworkAgendaItem {
   const HomeworkAgendaItem({
@@ -8,15 +9,20 @@ final class HomeworkAgendaItem {
     required this.isDone,
     required this.changedAfterCompletion,
     required this.requiresIdentityReview,
+    required this.origin,
+    required this.updatedAt,
+    this.subjectId,
     this.subjectName,
     this.assignedOn,
     this.dueOn,
     this.doneAt,
+    this.personalNote,
   });
 
   final String id;
   final String profileId;
   final String text;
+  final String? subjectId;
   final String? subjectName;
   final SchoolDate? assignedOn;
   final SchoolDate? dueOn;
@@ -24,4 +30,7 @@ final class HomeworkAgendaItem {
   final DateTime? doneAt;
   final bool changedAfterCompletion;
   final bool requiresIdentityReview;
+  final HomeworkOrigin origin;
+  final DateTime updatedAt;
+  final String? personalNote;
 }

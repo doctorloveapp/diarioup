@@ -9,6 +9,7 @@
 .flutter-plugins-dependencies
 .flutter_tool_state
 build/
+dist/
 coverage/
 lcov.info
 *.lcov

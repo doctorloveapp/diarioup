@@ -116,6 +116,7 @@ class HomeworkItems extends Table {
   TextColumn get identityConfidence => text()();
   TextColumn get origin => text()();
   TextColumn get body => text()();
+  TextColumn get personalNote => text().nullable()();
   TextColumn get assignedOn => text().nullable()();
   TextColumn get contentRevision => text()();
   DateTimeColumn get firstSeenAt => dateTime()();

@@ -19,4 +19,6 @@ L'indirizzo è un attributo del certificato (`STREET`), non una chiave o una cre
 - Mantenere separati keystore di debug, staging e produzione.
 - Registrare in modo sicuro alias, fingerprint pubbliche e scadenze; non registrare mai le password.
 
-La configurazione Gradle effettiva verrà aggiunta quando sarà presente il modulo Android del progetto.
+La configurazione Gradle legge già le quattro variabili `DIARIOUP_ANDROID_*`.
+Il task `DiarioUp: APK release per sideload` compila, verifica la firma e rifiuta
+un certificato che non contenga tutti i metadati pubblici indicati sopra.

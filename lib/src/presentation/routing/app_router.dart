@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../controllers/app_flow_controller.dart';
 import '../pages/dashboard_page.dart';
+import '../pages/homework_detail_page.dart';
 import '../pages/login_page.dart';
 import '../pages/onboarding_page.dart';
 
@@ -11,6 +12,7 @@ abstract final class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String dashboard = '/dashboard';
+  static const String homeworkDetailName = 'homework-detail';
 }
 
 final class _RouterRefresh extends ChangeNotifier {
@@ -43,7 +45,7 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
           path != AppRoutes.login) {
         return AppRoutes.login;
       }
-      if (flow.isAuthenticated && path != AppRoutes.dashboard) {
+      if (flow.isAuthenticated && !path.startsWith(AppRoutes.dashboard)) {
         return AppRoutes.dashboard;
       }
       return null;
@@ -60,6 +62,15 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.dashboard,
         builder: (context, state) => const DashboardPage(),
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'homework/:homeworkId',
+            name: AppRoutes.homeworkDetailName,
+            builder: (context, state) => HomeworkDetailPage(
+              homeworkId: state.pathParameters['homeworkId']!,
+            ),
+          ),
+        ],
       ),
     ],
   );

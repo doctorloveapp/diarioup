@@ -17,6 +17,22 @@ abstract final class DiarioUpColors {
       Color.alphaBlend(superficie.withValues(alpha: 0.24), inchiostro);
 }
 
+abstract final class DiarioUpSubjectColors {
+  static const List<Color> palette = <Color>[
+    DiarioUpColors.indaco,
+    DiarioUpColors.verdePetrolio,
+    DiarioUpColors.ambra,
+    DiarioUpColors.inchiostro,
+    DiarioUpColors.testoSecondario,
+  ];
+
+  static Color resolve({int? storedValue, required String identity}) {
+    if (storedValue != null) return Color(storedValue);
+    final hash = identity.codeUnits.fold<int>(0, (value, unit) => value + unit);
+    return palette[hash % palette.length];
+  }
+}
+
 abstract final class DiarioUpSpacing {
   static const double xxs = 4;
   static const double xs = 8;

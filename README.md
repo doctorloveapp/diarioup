@@ -1,9 +1,10 @@
 # DiarioUp
 
 Questo repository contiene il client Flutter DiarioUp e l'adattatore isolato
-in sola lettura verso DidUP. Le Fasi 1.0 e 1.1 includono protocollo, test,
-routing, design system, onboarding, login e shell della dashboard. Il database
-locale e la sincronizzazione completa arrivano nelle fasi successive.
+in sola lettura verso DidUP. Le Fasi 1.0-1.4 includono protocollo, autenticazione,
+database locale cifrato, sincronizzazione, agenda, materie, checklist, ricerca,
+filtri, dettaglio e inserimento manuale. Il database Drift è la sola fonte dati
+della UI.
 
 Il modulo rispetta la direzione delle dipendenze `Presentation -> Domain <- Data`:
 
@@ -28,6 +29,11 @@ flutter analyze
 flutter test
 flutter run --dart-define=DIARIOUP_ENV=demo
 ```
+
+Per creare un APK release firmato e verificato per il sideloading, configurare
+le variabili descritte in `android/signing/README.md` ed eseguire
+`tool/build_sideload_release.ps1`. La prova su telefono è documentata in
+`docs/manuale_test_dispositivo.md`.
 
 Su Windows, una toolchain Flutter installata in un percorso contenente spazi puo
 esporre un difetto del build hook `objective_c` usato transitivamente dal secure

@@ -43,6 +43,35 @@ void main() {
 
     expect(find.textContaining(AppCopy.dashboardGreeting), findsOneWidget);
     expect(find.text(AppCopy.agenda), findsOneWidget);
+    expect(find.text('Leggere il capitolo assegnato'), findsOneWidget);
+
+    await tester.tap(find.text('Leggere il capitolo assegnato'));
+    await tester.pumpAndSettle();
+    expect(find.text(AppCopy.homeworkDetail), findsOneWidget);
+    expect(find.text(AppCopy.sourceDate), findsOneWidget);
+    expect(find.text(AppCopy.personalNote), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+    expect(find.text(AppCopy.undo), findsOneWidget);
+    await tester.tap(find.text(AppCopy.undo));
+    await tester.pumpAndSettle();
+    expect(find.text('Leggere il capitolo assegnato'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, AppCopy.searchHomework),
+      'Matematica',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Esercizi 12–18'), findsOneWidget);
+    expect(find.text('Leggere il capitolo assegnato'), findsNothing);
+
+    await tester.tap(find.text(AppCopy.subjects));
+    await tester.pumpAndSettle();
+    expect(find.text('Italiano'), findsOneWidget);
+    expect(find.text('Matematica'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });

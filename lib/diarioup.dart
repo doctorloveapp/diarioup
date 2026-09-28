@@ -17,6 +17,8 @@ export 'src/data/protocol/didup_protocol_config.dart';
 export 'src/data/repositories/didup_repository_impl.dart';
 export 'src/data/sync/didup_dashboard_source.dart';
 export 'src/domain/agenda/homework_agenda_item.dart';
+export 'src/domain/agenda/manual_homework_input.dart';
+export 'src/domain/agenda/subject_agenda.dart';
 export 'src/domain/auth/auth_credentials.dart';
 export 'src/domain/auth/auth_result.dart';
 export 'src/domain/auth/student_profile.dart';

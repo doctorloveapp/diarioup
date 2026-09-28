@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/agenda/homework_agenda_item.dart';
+import '../../domain/agenda/manual_homework_input.dart';
+import '../../domain/agenda/subject_agenda.dart';
 import '../../domain/auth/student_profile.dart' as domain;
 import '../../domain/homework/homework.dart' as domain;
 import '../../domain/homework/school_date.dart';
@@ -31,13 +33,18 @@ final class AppDatabase extends _$AppDatabase {
   final Uuid _uuid;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator migrator) => migrator.createAll(),
     onUpgrade: (Migrator migrator, int from, int to) async {
-      throw StateError('Migrazione database non definita: $from -> $to');
+      if (from < 2) {
+        await migrator.addColumn(homeworkItems, homeworkItems.personalNote);
+      }
+      if (to > 2) {
+        throw StateError('Migrazione database non definita: $from -> $to');
+      }
     },
     beforeOpen: (OpeningDetails details) async {
       await customStatement('pragma foreign_keys = on');
@@ -217,6 +224,7 @@ final class AppDatabase extends _$AppDatabase {
               id: homework.id,
               profileId: sourceProfileId,
               text: homework.body,
+              subjectId: subject?.id,
               subjectName: subject?.name,
               assignedOn: _schoolDate(homework.assignedOn),
               dueOn: _schoolDate(
@@ -228,9 +236,76 @@ final class AppDatabase extends _$AppDatabase {
                   completion?.isDone == true &&
                   completion?.completedRevision != homework.contentRevision,
               requiresIdentityReview: homework.requiresIdentityReview,
+              origin: domain.HomeworkOrigin.values.byName(homework.origin),
+              updatedAt: homework.updatedAt,
+              personalNote: homework.personalNote,
             );
           })
           .toList(growable: false);
+    });
+  }
+
+  Stream<HomeworkAgendaItem?> watchHomeworkDetail({
+    required String sourceProfileId,
+    required String homeworkId,
+  }) => watchAgenda(
+    sourceProfileId,
+  ).map((items) => items.where((item) => item.id == homeworkId).firstOrNull);
+
+  Stream<List<SubjectAgenda>> watchSubjects(String sourceProfileId) async* {
+    final profile = await _profileBySourceId(sourceProfileId);
+    if (profile == null) {
+      yield const <SubjectAgenda>[];
+      return;
+    }
+    final connection = await (select(
+      argoConnections,
+    )..where((table) => table.id.equals(profile.connectionId))).getSingle();
+    final query = select(subjects).join(<Join<HasResultSet, Object?>>[
+      leftOuterJoin(
+        homeworkItems,
+        homeworkItems.subjectId.equalsExp(subjects.id) &
+            homeworkItems.sourceState.equals('active'),
+      ),
+      leftOuterJoin(
+        completions,
+        completions.homeworkId.equalsExp(homeworkItems.id) &
+            completions.userId.equals(connection.userId),
+      ),
+    ])..where(subjects.profileId.equals(profile.id));
+
+    yield* query.watch().map((rows) {
+      final grouped = <String, _MutableSubjectAgenda>{};
+      for (final row in rows) {
+        final subject = row.readTable(subjects);
+        final homework = row.readTableOrNull(homeworkItems);
+        final completion = row.readTableOrNull(completions);
+        final value = grouped.putIfAbsent(
+          subject.id,
+          () => _MutableSubjectAgenda(subject),
+        );
+        if (homework != null) {
+          value.totalHomework++;
+          if (completion?.isDone != true) value.pendingHomework++;
+        }
+      }
+      final result =
+          grouped.values
+              .map(
+                (value) => SubjectAgenda(
+                  id: value.subject.id,
+                  profileId: sourceProfileId,
+                  name: value.subject.name,
+                  colorValue: value.subject.colorValue,
+                  totalHomework: value.totalHomework,
+                  pendingHomework: value.pendingHomework,
+                ),
+              )
+              .toList(growable: false)
+            ..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
+      return result;
     });
   }
 
@@ -288,6 +363,125 @@ final class AppDatabase extends _$AppDatabase {
     );
   }
 
+  Future<void> updatePersonalNote({
+    required String sourceProfileId,
+    required String homeworkId,
+    required String? note,
+  }) async {
+    final profile = await _profileBySourceId(sourceProfileId);
+    if (profile == null) throw StateError('Profilo locale non inizializzato.');
+    final normalized = note?.trim();
+    final updated =
+        await (update(homeworkItems)..where(
+              (table) =>
+                  table.id.equals(homeworkId) &
+                  table.profileId.equals(profile.id) &
+                  table.sourceState.equals('active'),
+            ))
+            .write(
+              HomeworkItemsCompanion(
+                personalNote: Value<String?>(
+                  normalized == null || normalized.isEmpty ? null : normalized,
+                ),
+                updatedAt: Value<DateTime>(DateTime.now().toUtc()),
+              ),
+            );
+    if (updated != 1) throw StateError('Compito locale non disponibile.');
+  }
+
+  Future<String> createManualSubject({
+    required String sourceProfileId,
+    required String name,
+    required int colorValue,
+  }) async {
+    final normalizedName = name.trim();
+    if (normalizedName.isEmpty) {
+      throw ArgumentError.value(
+        name,
+        'name',
+        'La materia non può essere vuota.',
+      );
+    }
+    final profile = await _profileBySourceId(sourceProfileId);
+    if (profile == null) throw StateError('Profilo locale non inizializzato.');
+    final existing = await (select(
+      subjects,
+    )..where((table) => table.profileId.equals(profile.id))).get();
+    final duplicate = existing
+        .where(
+          (subject) =>
+              subject.name.toLowerCase() == normalizedName.toLowerCase(),
+        )
+        .firstOrNull;
+    if (duplicate != null) return duplicate.id;
+
+    final id = _uuid.v4();
+    await into(subjects).insert(
+      SubjectsCompanion.insert(
+        id: id,
+        profileId: profile.id,
+        academicYear: profile.academicYear,
+        name: normalizedName,
+        colorValue: Value<int?>(colorValue),
+      ),
+    );
+    return id;
+  }
+
+  Future<String> createManualHomework(ManualHomeworkInput input) async {
+    final normalizedText = input.text.trim();
+    if (normalizedText.isEmpty) {
+      throw ArgumentError.value(
+        input.text,
+        'text',
+        'Il testo del compito non può essere vuoto.',
+      );
+    }
+    final profile = await _profileBySourceId(input.profileId);
+    if (profile == null) throw StateError('Profilo locale non inizializzato.');
+    if (input.subjectId case final subjectId?) {
+      final subject =
+          await (select(subjects)..where(
+                (table) =>
+                    table.id.equals(subjectId) &
+                    table.profileId.equals(profile.id),
+              ))
+              .getSingleOrNull();
+      if (subject == null) throw StateError('Materia locale non disponibile.');
+    }
+
+    final id = _uuid.v4();
+    final now = DateTime.now().toUtc();
+    await transaction(() async {
+      await into(homeworkItems).insert(
+        HomeworkItemsCompanion.insert(
+          id: id,
+          profileId: profile.id,
+          subjectId: Value<String?>(input.subjectId),
+          nestedIdentity: id,
+          identityConfidence:
+              domain.HomeworkIdentityConfidence.localIdentifier.name,
+          origin: domain.HomeworkOrigin.manual.name,
+          body: normalizedText,
+          personalNote: Value<String?>(_normalizedOptional(input.personalNote)),
+          assignedOn: Value<String?>(_todaySchoolDate()),
+          contentRevision: 'manual:$id',
+          firstSeenAt: now,
+          updatedAt: now,
+        ),
+      );
+      await into(deadlines).insert(
+        DeadlinesCompanion.insert(
+          id: _uuid.v4(),
+          homeworkId: id,
+          personalDueOn: Value<String?>(input.dueOn?.toString()),
+          provenance: const Value<String>('manual'),
+        ),
+      );
+    });
+    return id;
+  }
+
   Future<void> _upsertHomework(
     String internalProfileId,
     domain.Homework homework,
@@ -308,6 +502,7 @@ final class AppDatabase extends _$AppDatabase {
         identityConfidence: homework.identityConfidence.name,
         origin: homework.origin.name,
         body: homework.text,
+        personalNote: Value<String?>(previous?.personalNote),
         assignedOn: Value<String?>(homework.assignedOn?.toString()),
         contentRevision: homework.contentRevision,
         firstSeenAt: previous?.firstSeenAt ?? homework.firstSeenAt,
@@ -382,6 +577,7 @@ final class AppDatabase extends _$AppDatabase {
         academicYear: profile.academicYear,
         sourceSubjectId: Value<String?>(subject.sourceSubjectId),
         name: subject.name,
+        colorValue: Value<int?>(existing?.colorValue),
       ),
     );
     return id;
@@ -433,6 +629,24 @@ final class AppDatabase extends _$AppDatabase {
       (select(studentProfiles)
             ..where((table) => table.sourceProfileId.equals(sourceProfileId)))
           .getSingleOrNull();
+}
+
+final class _MutableSubjectAgenda {
+  _MutableSubjectAgenda(this.subject);
+
+  final Subject subject;
+  int totalHomework = 0;
+  int pendingHomework = 0;
+}
+
+String? _normalizedOptional(String? value) {
+  final normalized = value?.trim();
+  return normalized == null || normalized.isEmpty ? null : normalized;
+}
+
+String _todaySchoolDate() {
+  final now = DateTime.now();
+  return SchoolDate(now.year, now.month, now.day).toString();
 }
 
 SchoolDate? _schoolDate(String? value) {

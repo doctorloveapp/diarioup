@@ -1,6 +1,8 @@
 import '../../domain/auth/auth_credentials.dart';
 import '../../domain/auth/auth_result.dart';
 import '../../domain/agenda/homework_agenda_item.dart';
+import '../../domain/agenda/manual_homework_input.dart';
+import '../../domain/agenda/subject_agenda.dart';
 import '../../domain/homework/homework.dart';
 import '../../domain/repositories/didup_repository.dart';
 import '../../domain/sync/didup_sync.dart';
@@ -119,6 +121,19 @@ final class DidupRepositoryImpl implements DidupRepository {
       _database.watchAgenda(profileId);
 
   @override
+  Stream<HomeworkAgendaItem?> watchHomeworkDetail({
+    required String profileId,
+    required String homeworkId,
+  }) => _database.watchHomeworkDetail(
+    sourceProfileId: profileId,
+    homeworkId: homeworkId,
+  );
+
+  @override
+  Stream<List<SubjectAgenda>> watchSubjects({required String profileId}) =>
+      _database.watchSubjects(profileId);
+
+  @override
   Stream<DidupSyncStatus?> watchSyncStatus({required String profileId}) =>
       _database.watchSyncStatus(profileId);
 
@@ -132,6 +147,32 @@ final class DidupRepositoryImpl implements DidupRepository {
     homeworkId: homeworkId,
     isDone: isDone,
   );
+
+  @override
+  Future<void> updateHomeworkNote({
+    required String profileId,
+    required String homeworkId,
+    required String? note,
+  }) => _database.updatePersonalNote(
+    sourceProfileId: profileId,
+    homeworkId: homeworkId,
+    note: note,
+  );
+
+  @override
+  Future<String> createManualSubject({
+    required String profileId,
+    required String name,
+    required int colorValue,
+  }) => _database.createManualSubject(
+    sourceProfileId: profileId,
+    name: name,
+    colorValue: colorValue,
+  );
+
+  @override
+  Future<String> createManualHomework(ManualHomeworkInput input) =>
+      _database.createManualHomework(input);
 
   @override
   Future<void> logout() => _client.logout();

@@ -2457,6 +2457,17 @@ class $HomeworkItemsTable extends HomeworkItems
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _personalNoteMeta = const VerificationMeta(
+    'personalNote',
+  );
+  @override
+  late final GeneratedColumn<String> personalNote = GeneratedColumn<String>(
+    'personal_note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _assignedOnMeta = const VerificationMeta(
     'assignedOn',
   );
@@ -2539,6 +2550,7 @@ class $HomeworkItemsTable extends HomeworkItems
     identityConfidence,
     origin,
     body,
+    personalNote,
     assignedOn,
     contentRevision,
     firstSeenAt,
@@ -2632,6 +2644,15 @@ class $HomeworkItemsTable extends HomeworkItems
       );
     } else if (isInserting) {
       context.missing(_bodyMeta);
+    }
+    if (data.containsKey('personal_note')) {
+      context.handle(
+        _personalNoteMeta,
+        personalNote.isAcceptableOrUnknown(
+          data['personal_note']!,
+          _personalNoteMeta,
+        ),
+      );
     }
     if (data.containsKey('assigned_on')) {
       context.handle(
@@ -2732,6 +2753,10 @@ class $HomeworkItemsTable extends HomeworkItems
         DriftSqlType.string,
         data['${effectivePrefix}body'],
       )!,
+      personalNote: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}personal_note'],
+      ),
       assignedOn: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}assigned_on'],
@@ -2775,6 +2800,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
   final String identityConfidence;
   final String origin;
   final String body;
+  final String? personalNote;
   final String? assignedOn;
   final String contentRevision;
   final DateTime firstSeenAt;
@@ -2791,6 +2817,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
     required this.identityConfidence,
     required this.origin,
     required this.body,
+    this.personalNote,
     this.assignedOn,
     required this.contentRevision,
     required this.firstSeenAt,
@@ -2816,6 +2843,9 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
     map['identity_confidence'] = Variable<String>(identityConfidence);
     map['origin'] = Variable<String>(origin);
     map['body'] = Variable<String>(body);
+    if (!nullToAbsent || personalNote != null) {
+      map['personal_note'] = Variable<String>(personalNote);
+    }
     if (!nullToAbsent || assignedOn != null) {
       map['assigned_on'] = Variable<String>(assignedOn);
     }
@@ -2844,6 +2874,9 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
       identityConfidence: Value(identityConfidence),
       origin: Value(origin),
       body: Value(body),
+      personalNote: personalNote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(personalNote),
       assignedOn: assignedOn == null && nullToAbsent
           ? const Value.absent()
           : Value(assignedOn),
@@ -2872,6 +2905,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
       ),
       origin: serializer.fromJson<String>(json['origin']),
       body: serializer.fromJson<String>(json['body']),
+      personalNote: serializer.fromJson<String?>(json['personalNote']),
       assignedOn: serializer.fromJson<String?>(json['assignedOn']),
       contentRevision: serializer.fromJson<String>(json['contentRevision']),
       firstSeenAt: serializer.fromJson<DateTime>(json['firstSeenAt']),
@@ -2895,6 +2929,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
       'identityConfidence': serializer.toJson<String>(identityConfidence),
       'origin': serializer.toJson<String>(origin),
       'body': serializer.toJson<String>(body),
+      'personalNote': serializer.toJson<String?>(personalNote),
       'assignedOn': serializer.toJson<String?>(assignedOn),
       'contentRevision': serializer.toJson<String>(contentRevision),
       'firstSeenAt': serializer.toJson<DateTime>(firstSeenAt),
@@ -2914,6 +2949,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
     String? identityConfidence,
     String? origin,
     String? body,
+    Value<String?> personalNote = const Value.absent(),
     Value<String?> assignedOn = const Value.absent(),
     String? contentRevision,
     DateTime? firstSeenAt,
@@ -2932,6 +2968,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
     identityConfidence: identityConfidence ?? this.identityConfidence,
     origin: origin ?? this.origin,
     body: body ?? this.body,
+    personalNote: personalNote.present ? personalNote.value : this.personalNote,
     assignedOn: assignedOn.present ? assignedOn.value : this.assignedOn,
     contentRevision: contentRevision ?? this.contentRevision,
     firstSeenAt: firstSeenAt ?? this.firstSeenAt,
@@ -2959,6 +2996,9 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
           : this.identityConfidence,
       origin: data.origin.present ? data.origin.value : this.origin,
       body: data.body.present ? data.body.value : this.body,
+      personalNote: data.personalNote.present
+          ? data.personalNote.value
+          : this.personalNote,
       assignedOn: data.assignedOn.present
           ? data.assignedOn.value
           : this.assignedOn,
@@ -2990,6 +3030,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
           ..write('identityConfidence: $identityConfidence, ')
           ..write('origin: $origin, ')
           ..write('body: $body, ')
+          ..write('personalNote: $personalNote, ')
           ..write('assignedOn: $assignedOn, ')
           ..write('contentRevision: $contentRevision, ')
           ..write('firstSeenAt: $firstSeenAt, ')
@@ -3011,6 +3052,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
     identityConfidence,
     origin,
     body,
+    personalNote,
     assignedOn,
     contentRevision,
     firstSeenAt,
@@ -3031,6 +3073,7 @@ class HomeworkItem extends DataClass implements Insertable<HomeworkItem> {
           other.identityConfidence == this.identityConfidence &&
           other.origin == this.origin &&
           other.body == this.body &&
+          other.personalNote == this.personalNote &&
           other.assignedOn == this.assignedOn &&
           other.contentRevision == this.contentRevision &&
           other.firstSeenAt == this.firstSeenAt &&
@@ -3049,6 +3092,7 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
   final Value<String> identityConfidence;
   final Value<String> origin;
   final Value<String> body;
+  final Value<String?> personalNote;
   final Value<String?> assignedOn;
   final Value<String> contentRevision;
   final Value<DateTime> firstSeenAt;
@@ -3066,6 +3110,7 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
     this.identityConfidence = const Value.absent(),
     this.origin = const Value.absent(),
     this.body = const Value.absent(),
+    this.personalNote = const Value.absent(),
     this.assignedOn = const Value.absent(),
     this.contentRevision = const Value.absent(),
     this.firstSeenAt = const Value.absent(),
@@ -3084,6 +3129,7 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
     required String identityConfidence,
     required String origin,
     required String body,
+    this.personalNote = const Value.absent(),
     this.assignedOn = const Value.absent(),
     required String contentRevision,
     required DateTime firstSeenAt,
@@ -3110,6 +3156,7 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
     Expression<String>? identityConfidence,
     Expression<String>? origin,
     Expression<String>? body,
+    Expression<String>? personalNote,
     Expression<String>? assignedOn,
     Expression<String>? contentRevision,
     Expression<DateTime>? firstSeenAt,
@@ -3128,6 +3175,7 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
       if (identityConfidence != null) 'identity_confidence': identityConfidence,
       if (origin != null) 'origin': origin,
       if (body != null) 'body': body,
+      if (personalNote != null) 'personal_note': personalNote,
       if (assignedOn != null) 'assigned_on': assignedOn,
       if (contentRevision != null) 'content_revision': contentRevision,
       if (firstSeenAt != null) 'first_seen_at': firstSeenAt,
@@ -3149,6 +3197,7 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
     Value<String>? identityConfidence,
     Value<String>? origin,
     Value<String>? body,
+    Value<String?>? personalNote,
     Value<String?>? assignedOn,
     Value<String>? contentRevision,
     Value<DateTime>? firstSeenAt,
@@ -3167,6 +3216,7 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
       identityConfidence: identityConfidence ?? this.identityConfidence,
       origin: origin ?? this.origin,
       body: body ?? this.body,
+      personalNote: personalNote ?? this.personalNote,
       assignedOn: assignedOn ?? this.assignedOn,
       contentRevision: contentRevision ?? this.contentRevision,
       firstSeenAt: firstSeenAt ?? this.firstSeenAt,
@@ -3208,6 +3258,9 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
     if (body.present) {
       map['body'] = Variable<String>(body.value);
     }
+    if (personalNote.present) {
+      map['personal_note'] = Variable<String>(personalNote.value);
+    }
     if (assignedOn.present) {
       map['assigned_on'] = Variable<String>(assignedOn.value);
     }
@@ -3246,6 +3299,7 @@ class HomeworkItemsCompanion extends UpdateCompanion<HomeworkItem> {
           ..write('identityConfidence: $identityConfidence, ')
           ..write('origin: $origin, ')
           ..write('body: $body, ')
+          ..write('personalNote: $personalNote, ')
           ..write('assignedOn: $assignedOn, ')
           ..write('contentRevision: $contentRevision, ')
           ..write('firstSeenAt: $firstSeenAt, ')
@@ -8421,6 +8475,7 @@ typedef $$HomeworkItemsTableCreateCompanionBuilder =
       required String identityConfidence,
       required String origin,
       required String body,
+      Value<String?> personalNote,
       Value<String?> assignedOn,
       required String contentRevision,
       required DateTime firstSeenAt,
@@ -8440,6 +8495,7 @@ typedef $$HomeworkItemsTableUpdateCompanionBuilder =
       Value<String> identityConfidence,
       Value<String> origin,
       Value<String> body,
+      Value<String?> personalNote,
       Value<String?> assignedOn,
       Value<String> contentRevision,
       Value<DateTime> firstSeenAt,
@@ -8617,6 +8673,11 @@ class $$HomeworkItemsTableFilterComposer
 
   ColumnFilters<String> get body => $composableBuilder(
     column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personalNote => $composableBuilder(
+    column: $table.personalNote,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8834,6 +8895,11 @@ class $$HomeworkItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get personalNote => $composableBuilder(
+    column: $table.personalNote,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get assignedOn => $composableBuilder(
     column: $table.assignedOn,
     builder: (column) => ColumnOrderings(column),
@@ -8966,6 +9032,11 @@ class $$HomeworkItemsTableAnnotationComposer
 
   GeneratedColumn<String> get body =>
       $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<String> get personalNote => $composableBuilder(
+    column: $table.personalNote,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get assignedOn => $composableBuilder(
     column: $table.assignedOn,
@@ -9184,6 +9255,7 @@ class $$HomeworkItemsTableTableManager
                 Value<String> identityConfidence = const Value.absent(),
                 Value<String> origin = const Value.absent(),
                 Value<String> body = const Value.absent(),
+                Value<String?> personalNote = const Value.absent(),
                 Value<String?> assignedOn = const Value.absent(),
                 Value<String> contentRevision = const Value.absent(),
                 Value<DateTime> firstSeenAt = const Value.absent(),
@@ -9201,6 +9273,7 @@ class $$HomeworkItemsTableTableManager
                 identityConfidence: identityConfidence,
                 origin: origin,
                 body: body,
+                personalNote: personalNote,
                 assignedOn: assignedOn,
                 contentRevision: contentRevision,
                 firstSeenAt: firstSeenAt,
@@ -9220,6 +9293,7 @@ class $$HomeworkItemsTableTableManager
                 required String identityConfidence,
                 required String origin,
                 required String body,
+                Value<String?> personalNote = const Value.absent(),
                 Value<String?> assignedOn = const Value.absent(),
                 required String contentRevision,
                 required DateTime firstSeenAt,
@@ -9237,6 +9311,7 @@ class $$HomeworkItemsTableTableManager
                 identityConfidence: identityConfidence,
                 origin: origin,
                 body: body,
+                personalNote: personalNote,
                 assignedOn: assignedOn,
                 contentRevision: contentRevision,
                 firstSeenAt: firstSeenAt,

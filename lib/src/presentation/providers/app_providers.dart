@@ -16,6 +16,7 @@ import '../../data/protocol/didup_protocol_config.dart';
 import '../../data/repositories/didup_repository_impl.dart';
 import '../../domain/repositories/didup_repository.dart';
 import '../../domain/agenda/homework_agenda_item.dart';
+import '../../domain/agenda/subject_agenda.dart';
 import '../../domain/sync/didup_sync.dart';
 import '../../domain/use_cases/authenticate_with_didup.dart';
 
@@ -76,6 +77,29 @@ final homeworkAgendaProvider =
     ) async* {
       final repository = await ref.watch(didupRepositoryProvider.future);
       yield* repository.watchHomework(profileId: profileId);
+    });
+
+typedef HomeworkDetailRequest = ({String profileId, String homeworkId});
+
+final homeworkDetailProvider =
+    StreamProvider.family<HomeworkAgendaItem?, HomeworkDetailRequest>((
+      Ref ref,
+      request,
+    ) async* {
+      final repository = await ref.watch(didupRepositoryProvider.future);
+      yield* repository.watchHomeworkDetail(
+        profileId: request.profileId,
+        homeworkId: request.homeworkId,
+      );
+    });
+
+final subjectsAgendaProvider =
+    StreamProvider.family<List<SubjectAgenda>, String>((
+      Ref ref,
+      profileId,
+    ) async* {
+      final repository = await ref.watch(didupRepositoryProvider.future);
+      yield* repository.watchSubjects(profileId: profileId);
     });
 
 final syncStatusProvider = StreamProvider.family<DidupSyncStatus?, String>((
