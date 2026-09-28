@@ -2,13 +2,16 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/profile/profile_customization.dart';
+import '../../domain/diagnostics/diagnostic_event.dart';
 import '../../domain/reminders/reminder_preferences.dart';
 import '../../domain/reminders/reminder_service.dart';
 import '../design_system/diarioup_tokens.dart';
 import '../l10n/app_copy.dart';
 import '../providers/app_providers.dart';
+import '../routing/app_router.dart';
 
 final class SettingsPage extends ConsumerWidget {
   const SettingsPage({
@@ -66,6 +69,17 @@ final class SettingsPage extends ConsumerWidget {
                 ),
               ),
         ],
+        const SizedBox(height: DiarioUpSpacing.md),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.info_outline_rounded),
+            title: const Text(AppCopy.infoPrivacy),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: currentProfileId == null
+                ? null
+                : () => context.pushNamed(AppRoutes.infoPrivacyName),
+          ),
+        ),
         const SizedBox(height: DiarioUpSpacing.md),
         Card(
           child: ListTile(
@@ -153,6 +167,10 @@ final class _AppearanceSettingsCardState
       );
       if (mounted) _showMessage(AppCopy.imageSaved);
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.personalization,
+        DiagnosticCode.personalizationFailed,
+      );
       if (mounted) _showMessage(AppCopy.imageSaveError);
     } finally {
       if (mounted) setState(() => _savingKind = null);
@@ -168,6 +186,10 @@ final class _AppearanceSettingsCardState
       await repository.removeImage(profileId: widget.profileId, kind: kind);
       if (mounted) _showMessage(AppCopy.imageRemoved);
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.personalization,
+        DiagnosticCode.personalizationFailed,
+      );
       if (mounted) _showMessage(AppCopy.imageSaveError);
     } finally {
       if (mounted) setState(() => _savingKind = null);
@@ -422,6 +444,10 @@ final class _ReminderSettingsCard extends ConsumerWidget {
         await coordinator.disable(profileId);
       }
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.reminders,
+        DiagnosticCode.reminderUpdateFailed,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(AppCopy.reminderUpdateError)),
@@ -455,6 +481,10 @@ final class _ReminderSettingsCard extends ConsumerWidget {
         minute: selected.minute,
       );
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.reminders,
+        DiagnosticCode.reminderUpdateFailed,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(AppCopy.reminderUpdateError)),

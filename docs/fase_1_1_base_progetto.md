@@ -16,12 +16,10 @@ Il logout cancella la sessione sicura tramite il repository e torna al login.
 
 ## Ambienti
 
-La build predefinita usa `DIARIOUP_ENV=demo`: nessuna richiesta di rete, nessuna
-persistenza degli input e profilo sintetico. Le build `development` e
-`production` collegano il repository reale soltanto quando ricevono:
+La modalità demo è stata rimossa prima della Beta. Ogni build eseguibile usa
+esclusivamente il repository reale e richiede la configurazione approvata:
 
 ```text
---dart-define=DIARIOUP_ENV=development
 --dart-define=DIDUP_OAUTH_CLIENT_ID=...
 --dart-define=DIDUP_REDIRECT_URI=...
 --dart-define=DIDUP_CLIENT_VERSION=...

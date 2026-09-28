@@ -19,15 +19,41 @@ abstract final class AppCopy {
   static const String password = 'Password';
   static const String login = 'Accedi';
   static const String requiredField = 'Campo obbligatorio';
-  static const String demoTitle = 'Modalità demo';
-  static const String demoBody =
-      'Nessun dato viene inviato: inserisci valori di prova per vedere il flusso.';
+  static const String loginRejectedOrUnavailable =
+      'Credenziali errate o servizio non raggiungibile. Riprova.';
   static const String profileSelection = 'Scegli il profilo';
   static const String profileSelectionBody =
       'Questo accesso contiene più studenti. Seleziona quello da usare.';
   static const String agenda = 'Agenda';
   static const String subjects = 'Materie';
   static const String settings = 'Impostazioni';
+  static const String infoPrivacy = 'Info & Privacy';
+  static const String appVersion = 'Versione app';
+  static const String privacyNotice = 'Informativa privacy';
+  static const String privacyNoticeBody =
+      'Leggi come DiarioUp tratta e protegge i dati sul dispositivo.';
+  static const String exportData = 'Esporta dati';
+  static const String exportDataBody =
+      'Crea un backup JSON di tutti i compiti del profilo.';
+  static const String exportDataDone = 'Backup JSON pronto per la condivisione';
+  static const String exportDataError =
+      'Impossibile esportare i dati. Riprova.';
+  static const String deleteAllData = 'Elimina tutti i dati DiarioUp';
+  static const String deleteAllDataBody =
+      'Rimuove dati locali, sessione, immagini e promemoria.';
+  static const String deleteAllDataTitle = 'Eliminare tutti i dati?';
+  static const String deleteAllDataWarning =
+      'L\'operazione non può essere annullata. I dati originali presenti su '
+      'Argo non saranno modificati.';
+  static const String deleteAllDataConfirm = 'Elimina tutto';
+  static const String deleteAllDataError =
+      'La cancellazione non è stata completata. Riavvia l\'app e riprova.';
+  static const String diagnostics = 'Log di diagnostica';
+  static const String diagnosticsBody =
+      'Ultimi 10 errori tecnici minimizzati, senza dati personali.';
+  static const String diagnosticsEmpty = 'Nessun errore tecnico registrato.';
+  static const String diagnosticsLoadError =
+      'Impossibile leggere il log di diagnostica.';
   static const String personalization = 'Personalizzazione';
   static const String personalizationBody =
       'Scegli immagini locali per rendere il diario più personale.';
@@ -50,9 +76,6 @@ abstract final class AppCopy {
   static const String tomorrow = 'Domani';
   static const String nextDays = 'Prossimi giorni';
   static const String overdue = 'Scaduti';
-  static const String demoEmptyTitle = 'La base è pronta';
-  static const String demoEmptyBody =
-      'La sincronizzazione popolerà qui i compiti. In demo usiamo soltanto dati sintetici.';
   static const String syncStatus = 'Agenda locale aggiornata';
   static const String syncInProgress = 'Sincronizzazione in corso';
   static const String syncError = 'Sincronizzazione non riuscita';
@@ -103,6 +126,25 @@ abstract final class AppCopy {
   static const String noSubjects =
       'Nessuna materia. Puoi aggiungerne una con il pulsante in basso.';
   static const String noHomeworkForSubject = 'Nessun compito associato.';
+  static const String shareHomework = 'Condividi compiti';
+  static const String shareHomeworkBody =
+      'Crea un PDF ordinato scegliendo periodo o materia.';
+  static const String exportScope = 'Cosa vuoi condividere';
+  static const String exportWeek = 'Intera settimana';
+  static const String exportWeekHint = 'Da lunedì a domenica';
+  static const String exportDay = 'Giorno specifico';
+  static const String exportSubject = 'Materia specifica';
+  static const String selectDay = 'Scegli giorno';
+  static const String selectSubject = 'Scegli materia';
+  static const String sharePdf = 'Condividi PDF';
+  static const String exportPrivacy =
+      'I compiti completati e le note personali non saranno inclusi.';
+  static const String exportPreparing = 'Preparazione del PDF...';
+  static const String exportEmpty =
+      'Nessun compito da fare per la selezione scelta.';
+  static const String exportError =
+      'Impossibile creare o condividere il PDF. Riprova.';
+  static const String exportDone = 'PDF condiviso';
   static const String homeworkDetail = 'Dettaglio compito';
   static const String homeworkNotAvailable =
       'Questo compito non è più disponibile.';

@@ -4,6 +4,7 @@ import '../../domain/agenda/homework_agenda_item.dart';
 import '../../domain/agenda/manual_homework_input.dart';
 import '../../domain/agenda/subject_agenda.dart';
 import '../../domain/homework/homework.dart';
+import '../../domain/diagnostics/diagnostic_event.dart';
 import '../../domain/repositories/didup_repository.dart';
 import '../../domain/sync/didup_sync.dart';
 import '../auth/didup_auth_service.dart';
@@ -115,6 +116,11 @@ final class DidupRepositoryImpl implements DidupRepository {
         attemptedAt: attemptedAt,
         adapterVersion: _adapterVersion,
         errorCode: 'sync_failed',
+      );
+      await _database.recordDiagnosticEvent(
+        area: DiagnosticArea.synchronization,
+        code: DiagnosticCode.synchronizationFailed,
+        occurredAt: attemptedAt,
       );
       rethrow;
     }

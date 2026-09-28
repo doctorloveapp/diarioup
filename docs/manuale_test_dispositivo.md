@@ -19,28 +19,27 @@ copiati nel report di test.
    `DIARIOUP_ANDROID_KEYSTORE_PATH`,
    `DIARIOUP_ANDROID_KEYSTORE_PASSWORD`, `DIARIOUP_ANDROID_KEY_ALIAS` e
    `DIARIOUP_ANDROID_KEY_PASSWORD`.
-6. Per una build `development` o `production`, impostare anche
+6. Per la build `production`, impostare anche
    `DIDUP_OAUTH_CLIENT_ID`, `DIDUP_REDIRECT_URI` e `DIDUP_CLIENT_VERSION` con i
    valori approvati. Non usare parametri copiati dall'app ufficiale.
 
 ## 2. Creazione e installazione dell'APK
 
-Da VS Code eseguire il task **DiarioUp: APK release per sideload**. Il task usa
-l'ambiente `demo`. In alternativa, dalla radice del progetto:
+Da VS Code eseguire il task **DiarioUp: APK release per sideload**. In
+alternativa, dalla radice del progetto:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\build_sideload_release.ps1 -Environment demo
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\build_sideload_release.ps1 -Environment production
 ```
 
-Per il collaudo autorizzato dell'integrazione sostituire `demo` con
-`development`. Lo script interrompe il processo se la firma manca e verifica
-l'APK con `apksigner`. L'artefatto finale si trova in
+Lo script interrompe il processo se firma o configurazione DidUP mancano e
+verifica l'APK con `apksigner`. L'artefatto finale si trova in
 `dist/DiarioUp-<ambiente>-release-sideload.apk`.
 
 Installare o aggiornare l'app:
 
 ```powershell
-adb install -r .\dist\DiarioUp-demo-release-sideload.apk
+adb install -r .\dist\DiarioUp-production-release-sideload.apk
 ```
 
 Per un collaudo da installazione pulita, prima disinstallare DiarioUp dal
@@ -155,5 +154,5 @@ oscurato nomi, scuola, testi dei compiti e altri dati personali.
 Il collaudo è superato quando non ci sono crash o perdite di dati, le operazioni
 offline persistono dopo il riavvio, tutti i percorsi della sezione 3 risultano
 OK e i casi permesso negato, consegna, completamento, reboot e cambio fuso della
-sezione 4 sono stati verificati. Una prova con dati demo non sostituisce il
-successivo test autorizzato del protocollo DidUP.
+sezione 4 sono stati verificati. Il collaudo DidUP deve usare esclusivamente un
+account autorizzato e dati opportunamente minimizzati nel report.

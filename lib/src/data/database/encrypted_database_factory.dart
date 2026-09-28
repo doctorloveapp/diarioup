@@ -19,8 +19,7 @@ final class EncryptedDatabaseFactory {
 
   Future<AppDatabase> open() async {
     final key = await _keyStore.loadOrCreate();
-    final directory = await getApplicationSupportDirectory();
-    final file = File(path.join(directory.path, databaseName));
+    final file = await databaseFile();
     return AppDatabase(
       NativeDatabase.createInBackground(
         file,
@@ -28,6 +27,19 @@ final class EncryptedDatabaseFactory {
             configureEncryptedDatabase(database, key: key),
       ),
     );
+  }
+
+  Future<File> databaseFile() async {
+    final directory = await getApplicationSupportDirectory();
+    return File(path.join(directory.path, databaseName));
+  }
+
+  Future<void> deleteDatabaseFiles() async {
+    final file = await databaseFile();
+    for (final suffix in const <String>['', '-wal', '-shm']) {
+      final candidate = File('${file.path}$suffix');
+      if (await candidate.exists()) await candidate.delete();
+    }
   }
 }
 

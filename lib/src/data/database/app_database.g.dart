@@ -5603,6 +5603,314 @@ class HomeworkIdentityMappingsCompanion
   }
 }
 
+class $DiagnosticEntriesTable extends DiagnosticEntries
+    with TableInfo<$DiagnosticEntriesTable, DiagnosticEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DiagnosticEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _occurredAtMeta = const VerificationMeta(
+    'occurredAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> occurredAt = GeneratedColumn<DateTime>(
+    'occurred_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _areaMeta = const VerificationMeta('area');
+  @override
+  late final GeneratedColumn<String> area = GeneratedColumn<String>(
+    'area',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, occurredAt, area, code];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'diagnostic_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DiagnosticEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('occurred_at')) {
+      context.handle(
+        _occurredAtMeta,
+        occurredAt.isAcceptableOrUnknown(data['occurred_at']!, _occurredAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_occurredAtMeta);
+    }
+    if (data.containsKey('area')) {
+      context.handle(
+        _areaMeta,
+        area.isAcceptableOrUnknown(data['area']!, _areaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_areaMeta);
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DiagnosticEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DiagnosticEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      occurredAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}occurred_at'],
+      )!,
+      area: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}area'],
+      )!,
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+    );
+  }
+
+  @override
+  $DiagnosticEntriesTable createAlias(String alias) {
+    return $DiagnosticEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class DiagnosticEntry extends DataClass implements Insertable<DiagnosticEntry> {
+  final String id;
+  final DateTime occurredAt;
+  final String area;
+  final String code;
+  const DiagnosticEntry({
+    required this.id,
+    required this.occurredAt,
+    required this.area,
+    required this.code,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['occurred_at'] = Variable<DateTime>(occurredAt);
+    map['area'] = Variable<String>(area);
+    map['code'] = Variable<String>(code);
+    return map;
+  }
+
+  DiagnosticEntriesCompanion toCompanion(bool nullToAbsent) {
+    return DiagnosticEntriesCompanion(
+      id: Value(id),
+      occurredAt: Value(occurredAt),
+      area: Value(area),
+      code: Value(code),
+    );
+  }
+
+  factory DiagnosticEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DiagnosticEntry(
+      id: serializer.fromJson<String>(json['id']),
+      occurredAt: serializer.fromJson<DateTime>(json['occurredAt']),
+      area: serializer.fromJson<String>(json['area']),
+      code: serializer.fromJson<String>(json['code']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'occurredAt': serializer.toJson<DateTime>(occurredAt),
+      'area': serializer.toJson<String>(area),
+      'code': serializer.toJson<String>(code),
+    };
+  }
+
+  DiagnosticEntry copyWith({
+    String? id,
+    DateTime? occurredAt,
+    String? area,
+    String? code,
+  }) => DiagnosticEntry(
+    id: id ?? this.id,
+    occurredAt: occurredAt ?? this.occurredAt,
+    area: area ?? this.area,
+    code: code ?? this.code,
+  );
+  DiagnosticEntry copyWithCompanion(DiagnosticEntriesCompanion data) {
+    return DiagnosticEntry(
+      id: data.id.present ? data.id.value : this.id,
+      occurredAt: data.occurredAt.present
+          ? data.occurredAt.value
+          : this.occurredAt,
+      area: data.area.present ? data.area.value : this.area,
+      code: data.code.present ? data.code.value : this.code,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DiagnosticEntry(')
+          ..write('id: $id, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('area: $area, ')
+          ..write('code: $code')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, occurredAt, area, code);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DiagnosticEntry &&
+          other.id == this.id &&
+          other.occurredAt == this.occurredAt &&
+          other.area == this.area &&
+          other.code == this.code);
+}
+
+class DiagnosticEntriesCompanion extends UpdateCompanion<DiagnosticEntry> {
+  final Value<String> id;
+  final Value<DateTime> occurredAt;
+  final Value<String> area;
+  final Value<String> code;
+  final Value<int> rowid;
+  const DiagnosticEntriesCompanion({
+    this.id = const Value.absent(),
+    this.occurredAt = const Value.absent(),
+    this.area = const Value.absent(),
+    this.code = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DiagnosticEntriesCompanion.insert({
+    required String id,
+    required DateTime occurredAt,
+    required String area,
+    required String code,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       occurredAt = Value(occurredAt),
+       area = Value(area),
+       code = Value(code);
+  static Insertable<DiagnosticEntry> custom({
+    Expression<String>? id,
+    Expression<DateTime>? occurredAt,
+    Expression<String>? area,
+    Expression<String>? code,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (occurredAt != null) 'occurred_at': occurredAt,
+      if (area != null) 'area': area,
+      if (code != null) 'code': code,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DiagnosticEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? occurredAt,
+    Value<String>? area,
+    Value<String>? code,
+    Value<int>? rowid,
+  }) {
+    return DiagnosticEntriesCompanion(
+      id: id ?? this.id,
+      occurredAt: occurredAt ?? this.occurredAt,
+      area: area ?? this.area,
+      code: code ?? this.code,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (occurredAt.present) {
+      map['occurred_at'] = Variable<DateTime>(occurredAt.value);
+    }
+    if (area.present) {
+      map['area'] = Variable<String>(area.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DiagnosticEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('area: $area, ')
+          ..write('code: $code, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5622,6 +5930,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SyncStatesTable syncStates = $SyncStatesTable(this);
   late final $HomeworkIdentityMappingsTable homeworkIdentityMappings =
       $HomeworkIdentityMappingsTable(this);
+  late final $DiagnosticEntriesTable diagnosticEntries =
+      $DiagnosticEntriesTable(this);
   late final Index profilesByConnectionYear = Index(
     'profiles_by_connection_year',
     'CREATE INDEX profiles_by_connection_year ON student_profiles (connection_id, academic_year)',
@@ -5666,6 +5976,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     reminders,
     syncStates,
     homeworkIdentityMappings,
+    diagnosticEntries,
     profilesByConnectionYear,
     subjectsByProfileYear,
     sourceRecordsByProfileDay,
@@ -11457,6 +11768,198 @@ typedef $$HomeworkIdentityMappingsTableProcessedTableManager =
       HomeworkIdentityMapping,
       PrefetchHooks Function({bool profileId})
     >;
+typedef $$DiagnosticEntriesTableCreateCompanionBuilder =
+    DiagnosticEntriesCompanion Function({
+      required String id,
+      required DateTime occurredAt,
+      required String area,
+      required String code,
+      Value<int> rowid,
+    });
+typedef $$DiagnosticEntriesTableUpdateCompanionBuilder =
+    DiagnosticEntriesCompanion Function({
+      Value<String> id,
+      Value<DateTime> occurredAt,
+      Value<String> area,
+      Value<String> code,
+      Value<int> rowid,
+    });
+
+class $$DiagnosticEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $DiagnosticEntriesTable> {
+  $$DiagnosticEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get area => $composableBuilder(
+    column: $table.area,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DiagnosticEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DiagnosticEntriesTable> {
+  $$DiagnosticEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get area => $composableBuilder(
+    column: $table.area,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DiagnosticEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DiagnosticEntriesTable> {
+  $$DiagnosticEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get area =>
+      $composableBuilder(column: $table.area, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+}
+
+class $$DiagnosticEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DiagnosticEntriesTable,
+          DiagnosticEntry,
+          $$DiagnosticEntriesTableFilterComposer,
+          $$DiagnosticEntriesTableOrderingComposer,
+          $$DiagnosticEntriesTableAnnotationComposer,
+          $$DiagnosticEntriesTableCreateCompanionBuilder,
+          $$DiagnosticEntriesTableUpdateCompanionBuilder,
+          (
+            DiagnosticEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $DiagnosticEntriesTable,
+              DiagnosticEntry
+            >,
+          ),
+          DiagnosticEntry,
+          PrefetchHooks Function()
+        > {
+  $$DiagnosticEntriesTableTableManager(
+    _$AppDatabase db,
+    $DiagnosticEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DiagnosticEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DiagnosticEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DiagnosticEntriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> occurredAt = const Value.absent(),
+                Value<String> area = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DiagnosticEntriesCompanion(
+                id: id,
+                occurredAt: occurredAt,
+                area: area,
+                code: code,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required DateTime occurredAt,
+                required String area,
+                required String code,
+                Value<int> rowid = const Value.absent(),
+              }) => DiagnosticEntriesCompanion.insert(
+                id: id,
+                occurredAt: occurredAt,
+                area: area,
+                code: code,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DiagnosticEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DiagnosticEntriesTable,
+      DiagnosticEntry,
+      $$DiagnosticEntriesTableFilterComposer,
+      $$DiagnosticEntriesTableOrderingComposer,
+      $$DiagnosticEntriesTableAnnotationComposer,
+      $$DiagnosticEntriesTableCreateCompanionBuilder,
+      $$DiagnosticEntriesTableUpdateCompanionBuilder,
+      (
+        DiagnosticEntry,
+        BaseReferences<_$AppDatabase, $DiagnosticEntriesTable, DiagnosticEntry>,
+      ),
+      DiagnosticEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11486,4 +11989,6 @@ class $AppDatabaseManager {
         _db,
         _db.homeworkIdentityMappings,
       );
+  $$DiagnosticEntriesTableTableManager get diagnosticEntries =>
+      $$DiagnosticEntriesTableTableManager(_db, _db.diagnosticEntries);
 }

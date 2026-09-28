@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/app_environment.dart';
 import '../controllers/login_controller.dart';
 import '../design_system/diarioup_tokens.dart';
 import '../l10n/app_copy.dart';
-import '../providers/app_providers.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/responsive_content.dart';
 
@@ -55,7 +53,6 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final loginState = ref.watch(loginControllerProvider);
-    final environment = ref.watch(appEnvironmentProvider);
     return Scaffold(
       body: ResponsiveContent(
         child: Column(
@@ -72,10 +69,6 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
             ),
             const SizedBox(height: DiarioUpSpacing.xs),
             Text(AppCopy.loginBody),
-            if (environment.flavor == AppFlavor.demo) ...<Widget>[
-              const SizedBox(height: DiarioUpSpacing.lg),
-              const _DemoBanner(),
-            ],
             const SizedBox(height: DiarioUpSpacing.lg),
             Card(
               child: Padding(
@@ -187,44 +180,6 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-final class _DemoBanner extends StatelessWidget {
-  const _DemoBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: DiarioUpColors.indaco.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(DiarioUpSpacing.sm),
-        border: Border.all(color: DiarioUpColors.indaco),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(DiarioUpSpacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(Icons.science_outlined, color: DiarioUpColors.indaco),
-            SizedBox(width: DiarioUpSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    AppCopy.demoTitle,
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  SizedBox(height: DiarioUpSpacing.xxs),
-                  Text(AppCopy.demoBody),
-                ],
-              ),
-            ),
           ],
         ),
       ),

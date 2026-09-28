@@ -7,6 +7,9 @@ import 'package:go_router/go_router.dart';
 import '../../domain/agenda/homework_agenda_item.dart';
 import '../../domain/agenda/manual_homework_input.dart';
 import '../../domain/homework/school_date.dart';
+import '../../domain/diagnostics/diagnostic_event.dart';
+import '../../domain/sharing/homework_file_sharer.dart';
+import '../../domain/use_cases/share_homework.dart';
 import '../controllers/app_flow_controller.dart';
 import '../design_system/diarioup_tokens.dart';
 import '../l10n/app_copy.dart';
@@ -14,6 +17,7 @@ import '../providers/app_providers.dart';
 import '../routing/app_router.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/homework_tile.dart';
+import '../widgets/homework_share_sheet.dart';
 import '../widgets/manual_entry_dialogs.dart';
 import '../widgets/subjects_panel.dart';
 import 'settings_page.dart';
@@ -28,6 +32,7 @@ final class DashboardPage extends ConsumerStatefulWidget {
 final class _DashboardPageState extends ConsumerState<DashboardPage>
     with WidgetsBindingObserver {
   int _selectedIndex = 0;
+  var _isSharing = false;
 
   @override
   void initState() {
@@ -83,6 +88,21 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
       appBar: AppBar(
         title: const BrandMark(compact: true),
         actions: <Widget>[
+          if (profileId != null)
+            Builder(
+              builder: (buttonContext) => IconButton(
+                onPressed: _isSharing
+                    ? null
+                    : () => _shareHomework(buttonContext, profileId),
+                tooltip: AppCopy.shareHomework,
+                icon: _isSharing
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.ios_share_rounded),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: DiarioUpSpacing.md),
             child: CircleAvatar(
@@ -189,6 +209,10 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
       if (!mounted) return;
       _showMessage(AppCopy.entrySaved);
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.homework,
+        DiagnosticCode.manualEntryFailed,
+      );
       if (mounted) _showMessage(AppCopy.entrySaveError);
     }
   }
@@ -206,14 +230,74 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
       if (!mounted) return;
       _showMessage(AppCopy.entrySaved);
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.homework,
+        DiagnosticCode.manualEntryFailed,
+      );
       if (mounted) _showMessage(AppCopy.entrySaveError);
     }
   }
 
-  void _showMessage(String message) {
+  Future<void> _shareHomework(
+    BuildContext buttonContext,
+    String profileId,
+  ) async {
+    final renderBox = buttonContext.findRenderObject() as RenderBox?;
+    final offset = renderBox?.localToGlobal(Offset.zero);
+    final origin = renderBox == null || offset == null
+        ? null
+        : ShareSheetOrigin(
+            left: offset.dx,
+            top: offset.dy,
+            width: renderBox.size.width,
+            height: renderBox.size.height,
+          );
+    setState(() => _isSharing = true);
+    try {
+      final subjects = await ref.read(subjectsAgendaProvider(profileId).future);
+      if (!mounted) return;
+      final selection = await showHomeworkShareSheet(
+        context,
+        subjects: subjects,
+      );
+      if (selection == null || !mounted) return;
+
+      _showMessage(
+        AppCopy.exportPreparing,
+        duration: const Duration(minutes: 1),
+      );
+      final shareHomework = await ref.read(shareHomeworkProvider.future);
+      final result = await shareHomework(
+        profileId: profileId,
+        selection: selection,
+        origin: origin,
+      );
+      if (!mounted) return;
+      _showMessage(
+        result.status == HomeworkShareStatus.empty
+            ? AppCopy.exportEmpty
+            : AppCopy.exportDone,
+      );
+    } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.sharing,
+        DiagnosticCode.shareFailed,
+      );
+      if (mounted) _showMessage(AppCopy.exportError);
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
+    }
+  }
+
+  void _showMessage(
+    String message, {
+    Duration duration = const Duration(seconds: 4),
+  }) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(SnackBar(content: Text(message)));
+    messenger.showSnackBar(
+      SnackBar(content: Text(message), duration: duration),
+    );
   }
 
   String _initial(String? value) {
@@ -391,6 +475,10 @@ final class _AgendaPanelState extends ConsumerState<_AgendaPanel> {
         ),
       );
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.homework,
+        DiagnosticCode.completionUpdateFailed,
+      );
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       messenger.hideCurrentSnackBar();

@@ -114,4 +114,34 @@ void main() {
       expect(credentials.toString(), isNot(contains(password)));
     },
   );
+
+  test('credenziali rifiutate da Argo non producono una sessione', () async {
+    final config = testProtocolConfig();
+    final adapter = ScriptedAdapter((RequestOptions request) {
+      if (request.uri.path == '/oauth2/auth') {
+        return redirectResponse(
+          '${config.ssoLoginUri}?login_challenge=synthetic-challenge',
+        );
+      }
+      if (request.uri.path == '/auth/sso/login') {
+        return jsonResponse(401, <String, Object?>{'success': false});
+      }
+      fail('Richiesta inattesa dopo il rifiuto delle credenziali.');
+    });
+    final dio = Dio()..httpClientAdapter = adapter;
+    final network = DidupNetworkClient.create(config: config, dio: dio);
+    final authService = DioDidupAuthService(networkClient: network);
+
+    await expectLater(
+      authService.login(
+        AuthCredentials(
+          schoolCode: 'TEST0000',
+          username: 'utente-errato',
+          password: 'password-errata',
+        ),
+      ),
+      throwsA(isA<AuthenticationFailure>()),
+    );
+    expect(adapter.requests, hasLength(2));
+  });
 }

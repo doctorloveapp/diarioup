@@ -1,33 +1,22 @@
-import '../../domain/auth/auth_credentials.dart';
-import '../../domain/auth/auth_result.dart';
-import '../../domain/auth/student_profile.dart';
-import '../../domain/agenda/homework_agenda_item.dart';
-import '../../domain/agenda/manual_homework_input.dart';
-import '../../domain/agenda/subject_agenda.dart';
-import '../../domain/homework/homework.dart';
-import '../../domain/repositories/didup_repository.dart';
-import '../../domain/sync/didup_sync.dart';
-import '../database/app_database.dart' show AppDatabase;
-import '../normalization/homework_normalizer.dart';
+import 'package:diarioup/diarioup.dart';
 
-/// Datasource sintetico per la UX: non apre connessioni e non conserva input.
-final class DemoDidupRepository implements DidupRepository {
-  const DemoDidupRepository({
-    required AppDatabase database,
-    required HomeworkNormalizer normalizer,
-    Future<void> Function(String profileId)? onHomeworkChanged,
-  }) : _database = database,
-       _normalizer = normalizer,
-       _onHomeworkChanged = onHomeworkChanged;
+/// Repository deterministico disponibile soltanto nella suite di test.
+///
+/// Il file vive sotto `test/` e non viene compilato negli artefatti dell'app.
+final class TestDidupRepository implements DidupRepository {
+  TestDidupRepository({required AppDatabase database})
+    : _database = database,
+      _normalizer = HomeworkNormalizer(
+        identityRegistry: DriftHomeworkIdentityRegistry(database: database),
+      );
 
   final AppDatabase _database;
   final HomeworkNormalizer _normalizer;
-  final Future<void> Function(String profileId)? _onHomeworkChanged;
 
-  static const StudentProfile _profile = StudentProfile(
-    sourceProfileId: 'demo-profile',
-    displayLabel: 'Profilo demo',
-    schoolMinistryCode: 'DEMO',
+  static const _profile = StudentProfile(
+    sourceProfileId: 'test-profile',
+    displayLabel: 'Profilo sintetico',
+    schoolMinistryCode: 'TEST0000',
     academicYear: '2026/2027',
   );
 
@@ -47,7 +36,7 @@ final class DemoDidupRepository implements DidupRepository {
     return _database.transaction(
       () => _normalizer.normalizeDashboard(
         profileId: internalId,
-        response: _demoDashboard(),
+        response: _dashboardFixture(),
       ),
     );
   }
@@ -56,25 +45,24 @@ final class DemoDidupRepository implements DidupRepository {
   Future<DidupSyncResult> sync({required String profileId}) async {
     await _database.storeProfiles(const <StudentProfile>[_profile]);
     final internalId = await _database.internalProfileId(profileId);
-    final now = DateTime.now().toUtc();
+    final completedAt = DateTime.now().toUtc();
     late HomeworkBatch batch;
     await _database.transaction(() async {
       batch = await _normalizer.normalizeDashboard(
         profileId: internalId,
-        response: _demoDashboard(),
+        response: _dashboardFixture(),
       );
       await _database.saveSyncBatch(
         internalProfileId: internalId,
         batch: batch,
-        attemptedAt: now,
+        attemptedAt: completedAt,
         coverageStart: DateTime.utc(2026, DateTime.september),
-        adapterVersion: 'demo-v1',
+        adapterVersion: 'test-adapter',
       );
     });
-    await _refreshReminders(profileId);
     return DidupSyncResult(
       savedHomeworkCount: batch.homework.length,
-      completedAt: now,
+      completedAt: completedAt,
       wasPartial: batch.isPartial,
     );
   }
@@ -105,28 +93,22 @@ final class DemoDidupRepository implements DidupRepository {
     required String profileId,
     required String homeworkId,
     required bool isDone,
-  }) async {
-    await _database.setCompleted(
-      sourceProfileId: profileId,
-      homeworkId: homeworkId,
-      isDone: isDone,
-    );
-    await _refreshReminders(profileId);
-  }
+  }) => _database.setCompleted(
+    sourceProfileId: profileId,
+    homeworkId: homeworkId,
+    isDone: isDone,
+  );
 
   @override
   Future<void> updateHomeworkNote({
     required String profileId,
     required String homeworkId,
     required String? note,
-  }) async {
-    await _database.updatePersonalNote(
-      sourceProfileId: profileId,
-      homeworkId: homeworkId,
-      note: note,
-    );
-    await _refreshReminders(profileId);
-  }
+  }) => _database.updatePersonalNote(
+    sourceProfileId: profileId,
+    homeworkId: homeworkId,
+    note: note,
+  );
 
   @override
   Future<String> createManualSubject({
@@ -140,51 +122,40 @@ final class DemoDidupRepository implements DidupRepository {
   );
 
   @override
-  Future<String> createManualHomework(ManualHomeworkInput input) async {
-    final id = await _database.createManualHomework(input);
-    await _refreshReminders(input.profileId);
-    return id;
-  }
-
-  Future<void> _refreshReminders(String profileId) async {
-    try {
-      await _onHomeworkChanged?.call(profileId);
-    } on Object {
-      // Una ripianificazione locale non può rendere fallita l'operazione dati.
-    }
-  }
+  Future<String> createManualHomework(ManualHomeworkInput input) =>
+      _database.createManualHomework(input);
 
   @override
   Future<void> logout() async {}
 }
 
-Map<String, Object?> _demoDashboard() => <String, Object?>{
+Map<String, Object?> _dashboardFixture() => <String, Object?>{
   'success': true,
   'data': <String, Object?>{
     'dati': <Object?>[
       <String, Object?>{
         'registro': <Object?>[
           <String, Object?>{
-            'pk': 'demo-record-1',
+            'pk': 'test-record-1',
             'datGiorno': '28/09/2026',
             'materia': 'Italiano',
-            'pkMateria': 'demo-subject-1',
+            'pkMateria': 'test-subject-1',
             'compiti': <Object?>[
               <String, Object?>{
-                'pk': 'demo-homework-1',
+                'pk': 'test-homework-1',
                 'compito': 'Leggere il capitolo assegnato',
                 'dataConsegna': '29/09/2026',
               },
             ],
           },
           <String, Object?>{
-            'pk': 'demo-record-2',
+            'pk': 'test-record-2',
             'datGiorno': '28/09/2026',
             'materia': 'Matematica',
-            'pkMateria': 'demo-subject-2',
+            'pkMateria': 'test-subject-2',
             'compiti': <Object?>[
               <String, Object?>{
-                'pk': 'demo-homework-2',
+                'pk': 'test-homework-2',
                 'compito': 'Esercizi 12–18',
                 'dataConsegna': '30/09/2026',
               },

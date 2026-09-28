@@ -6,6 +6,10 @@ import 'package:diarioup/src/data/database/app_database.dart' show AppDatabase;
 import 'package:diarioup/src/domain/profile/gallery_image_selector.dart';
 import 'package:diarioup/src/domain/profile/profile_customization.dart';
 import 'package:diarioup/src/domain/repositories/profile_customization_repository.dart';
+import 'package:diarioup/src/domain/auth/auth_credentials.dart';
+import 'package:diarioup/src/domain/auth/auth_result.dart';
+import 'package:diarioup/src/domain/errors/didup_failure.dart';
+import 'package:diarioup/src/domain/repositories/didup_repository.dart';
 import 'package:diarioup/src/presentation/l10n/app_copy.dart';
 import 'package:diarioup/src/presentation/providers/app_providers.dart';
 import 'package:diarioup/src/domain/reminders/reminder_plan.dart';
@@ -16,7 +20,50 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as image;
 
+import '../support/test_didup_repository.dart';
+
 void main() {
+  testWidgets('il rifiuto Argo resta nel login con un errore leggibile', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          didupRepositoryProvider.overrideWith(
+            (ref) async => _RejectingDidupRepository(),
+          ),
+          diagnosticRecorderProvider.overrideWith((ref) => (area, code) {}),
+        ],
+        child: const DiarioUpApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(AppCopy.start));
+    await tester.tap(find.text(AppCopy.start));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, AppCopy.schoolCode),
+      'TEST0000',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, AppCopy.username),
+      'utente-errato',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, AppCopy.password),
+      'password-errata',
+    );
+    await tester.tap(find.text(AppCopy.login));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppCopy.loginRejectedOrUnavailable), findsOneWidget);
+    expect(find.textContaining(AppCopy.dashboardGreeting), findsNothing);
+  });
+
   testWidgets('onboarding, login e dashboard sono navigabili', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
@@ -30,6 +77,9 @@ void main() {
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWith((ref) async => database),
+          didupRepositoryProvider.overrideWith(
+            (ref) async => TestDidupRepository(database: database),
+          ),
           reminderServiceProvider.overrideWith(
             (ref) => _GrantedReminderService(),
           ),
@@ -53,11 +103,11 @@ void main() {
     expect(find.text(AppCopy.loginTitle), findsOneWidget);
     await tester.enterText(
       find.widgetWithText(TextFormField, AppCopy.schoolCode),
-      'DEMO',
+      'TEST0000',
     );
     await tester.enterText(
       find.widgetWithText(TextFormField, AppCopy.username),
-      'utente-demo',
+      'utente-test',
     );
     await tester.enterText(
       find.widgetWithText(TextFormField, AppCopy.password),
@@ -147,6 +197,15 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });
+}
+
+final class _RejectingDidupRepository implements DidupRepository {
+  @override
+  Future<AuthResult> login(AuthCredentials credentials) async =>
+      throw const AuthenticationFailure();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _SyntheticGalleryImageSelector implements GalleryImageSelector {

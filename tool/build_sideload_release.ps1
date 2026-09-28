@@ -1,6 +1,6 @@
 param(
-    [ValidateSet("demo", "development", "production")]
-    [string]$Environment = "demo"
+    [ValidateSet("production")]
+    [string]$Environment = "production"
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,23 +25,20 @@ if (-not (Test-Path -LiteralPath $resolvedKeystore -PathType Leaf)) {
     throw "Il keystore configurato non e un file valido."
 }
 
+$oauthClientId = Require-EnvironmentValue "DIDUP_OAUTH_CLIENT_ID"
+$redirectUri = Require-EnvironmentValue "DIDUP_REDIRECT_URI"
+$clientVersion = Require-EnvironmentValue "DIDUP_CLIENT_VERSION"
+
 $flutterArguments = @(
     "build",
     "apk",
     "--release",
     "--target",
     "lib/main.dart",
-    "--dart-define=DIARIOUP_ENV=$Environment"
+    "--dart-define=DIDUP_OAUTH_CLIENT_ID=$oauthClientId",
+    "--dart-define=DIDUP_REDIRECT_URI=$redirectUri",
+    "--dart-define=DIDUP_CLIENT_VERSION=$clientVersion"
 )
-
-if ($Environment -ne "demo") {
-    $oauthClientId = Require-EnvironmentValue "DIDUP_OAUTH_CLIENT_ID"
-    $redirectUri = Require-EnvironmentValue "DIDUP_REDIRECT_URI"
-    $clientVersion = Require-EnvironmentValue "DIDUP_CLIENT_VERSION"
-    $flutterArguments += "--dart-define=DIDUP_OAUTH_CLIENT_ID=$oauthClientId"
-    $flutterArguments += "--dart-define=DIDUP_REDIRECT_URI=$redirectUri"
-    $flutterArguments += "--dart-define=DIDUP_CLIENT_VERSION=$clientVersion"
-}
 
 & flutter @flutterArguments
 if ($LASTEXITCODE -ne 0) {

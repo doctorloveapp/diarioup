@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/auth/auth_credentials.dart';
 import '../../domain/auth/student_profile.dart';
 import '../../domain/errors/didup_failure.dart';
+import '../../domain/diagnostics/diagnostic_event.dart';
 import '../l10n/app_copy.dart';
 import '../providers/app_providers.dart';
 import 'app_flow_controller.dart';
@@ -44,12 +45,27 @@ final class LoginController extends Notifier<LoginState> {
         ref.read(appFlowProvider.notifier).authenticate(profiles.single);
       }
     } on DidupFailure catch (failure) {
-      state = LoginState(errorMessage: failure.message);
+      _recordFailure();
+      final message = switch (failure) {
+        AuthenticationFailure() ||
+        NetworkFailure() => AppCopy.loginRejectedOrUnavailable,
+        _ => failure.message,
+      };
+      state = LoginState(errorMessage: message);
     } on ArgumentError {
+      _recordFailure();
       state = const LoginState(errorMessage: AppCopy.genericLoginError);
     } on Object {
+      _recordFailure();
       state = const LoginState(errorMessage: AppCopy.genericLoginError);
     }
+  }
+
+  void _recordFailure() {
+    ref.read(diagnosticRecorderProvider)(
+      DiagnosticArea.authentication,
+      DiagnosticCode.authenticationFailed,
+    );
   }
 
   void selectProfile(StudentProfile profile) {

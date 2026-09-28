@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/agenda/homework_agenda_item.dart';
+import '../../domain/diagnostics/diagnostic_event.dart';
 import '../../domain/homework/homework.dart';
 import '../controllers/app_flow_controller.dart';
 import '../design_system/diarioup_tokens.dart';
@@ -92,6 +93,10 @@ final class _HomeworkDetailPageState extends ConsumerState<HomeworkDetailPage> {
       if (!mounted) return;
       _showMessage(AppCopy.noteSaved);
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.homework,
+        DiagnosticCode.noteUpdateFailed,
+      );
       if (!mounted) return;
       _showMessage(AppCopy.noteSaveError);
     } finally {
@@ -130,6 +135,10 @@ final class _HomeworkDetailPageState extends ConsumerState<HomeworkDetailPage> {
         ),
       );
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.homework,
+        DiagnosticCode.completionUpdateFailed,
+      );
       if (!mounted) return;
       _showMessage(AppCopy.completionUpdateError);
     }

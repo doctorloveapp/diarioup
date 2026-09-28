@@ -5,14 +5,18 @@ import 'package:go_router/go_router.dart';
 import '../controllers/app_flow_controller.dart';
 import '../pages/dashboard_page.dart';
 import '../pages/homework_detail_page.dart';
+import '../pages/info_privacy_page.dart';
 import '../pages/login_page.dart';
 import '../pages/onboarding_page.dart';
+import '../pages/privacy_notice_page.dart';
 
 abstract final class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String dashboard = '/dashboard';
   static const String homeworkDetailName = 'homework-detail';
+  static const String infoPrivacyName = 'info-privacy';
+  static const String privacyName = 'privacy-notice';
 }
 
 final class _RouterRefresh extends ChangeNotifier {
@@ -69,6 +73,21 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
             builder: (context, state) => HomeworkDetailPage(
               homeworkId: state.pathParameters['homeworkId']!,
             ),
+          ),
+          GoRoute(
+            path: 'info',
+            name: AppRoutes.infoPrivacyName,
+            builder: (context, state) {
+              final profile = ref.read(appFlowProvider).activeProfile!;
+              return InfoPrivacyPage(profileId: profile.sourceProfileId);
+            },
+            routes: <RouteBase>[
+              GoRoute(
+                path: 'privacy',
+                name: AppRoutes.privacyName,
+                builder: (context, state) => const PrivacyNoticePage(),
+              ),
+            ],
           ),
         ],
       ),

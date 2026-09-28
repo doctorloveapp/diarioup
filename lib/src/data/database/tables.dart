@@ -197,3 +197,13 @@ class HomeworkIdentityMappings extends Table {
     nestedIdentity,
   };
 }
+
+class DiagnosticEntries extends Table {
+  TextColumn get id => text()();
+  DateTimeColumn get occurredAt => dateTime()();
+  TextColumn get area => text()();
+  TextColumn get code => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}

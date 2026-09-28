@@ -7,6 +7,7 @@ import '../../domain/agenda/homework_agenda_item.dart';
 import '../../domain/agenda/manual_homework_input.dart';
 import '../../domain/agenda/subject_agenda.dart';
 import '../../domain/auth/student_profile.dart' as domain;
+import '../../domain/diagnostics/diagnostic_event.dart';
 import '../../domain/homework/homework.dart' as domain;
 import '../../domain/homework/school_date.dart';
 import '../../domain/profile/profile_customization.dart';
@@ -30,6 +31,7 @@ part 'app_database.g.dart';
     Reminders,
     SyncStates,
     HomeworkIdentityMappings,
+    DiagnosticEntries,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -38,7 +40,7 @@ final class AppDatabase extends _$AppDatabase {
   final Uuid _uuid;
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -47,7 +49,10 @@ final class AppDatabase extends _$AppDatabase {
       if (from < 2) {
         await migrator.addColumn(homeworkItems, homeworkItems.personalNote);
       }
-      if (to > 2) {
+      if (from < 3) {
+        await migrator.createTable(diagnosticEntries);
+      }
+      if (to > 3) {
         throw StateError('Migrazione database non definita: $from -> $to');
       }
     },
@@ -63,6 +68,61 @@ final class AppDatabase extends _$AppDatabase {
       }
     },
   );
+
+  Stream<List<DiagnosticEvent>> watchRecentDiagnosticEvents() {
+    final query = select(diagnosticEntries)
+      ..orderBy(<OrderingTerm Function($DiagnosticEntriesTable)>[
+        (table) => OrderingTerm.desc(table.occurredAt),
+      ])
+      ..limit(10);
+    return query.watch().map(
+      (rows) => rows
+          .map(
+            (row) => DiagnosticEvent(
+              occurredAt: row.occurredAt.toUtc(),
+              area: DiagnosticArea.values.byName(row.area),
+              code: DiagnosticCode.values.byName(row.code),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  Future<void> recordDiagnosticEvent({
+    required DiagnosticArea area,
+    required DiagnosticCode code,
+    required DateTime occurredAt,
+  }) async {
+    await transaction(() async {
+      await into(diagnosticEntries).insert(
+        DiagnosticEntriesCompanion.insert(
+          id: _uuid.v4(),
+          occurredAt: occurredAt.toUtc(),
+          area: area.name,
+          code: code.name,
+        ),
+      );
+      final retentionLimit = occurredAt.toUtc().subtract(
+        const Duration(days: 14),
+      );
+      await (delete(diagnosticEntries)..where(
+            (table) => table.occurredAt.isSmallerThanValue(retentionLimit),
+          ))
+          .go();
+      final obsolete =
+          await (select(diagnosticEntries)
+                ..orderBy(<OrderingTerm Function($DiagnosticEntriesTable)>[
+                  (table) => OrderingTerm.desc(table.occurredAt),
+                ])
+                ..limit(100, offset: 10))
+              .get();
+      if (obsolete.isNotEmpty) {
+        await (delete(
+          diagnosticEntries,
+        )..where((table) => table.id.isIn(obsolete.map((row) => row.id)))).go();
+      }
+    });
+  }
 
   Future<void> storeProfiles(List<domain.StudentProfile> profiles) async {
     final now = DateTime.now().toUtc();

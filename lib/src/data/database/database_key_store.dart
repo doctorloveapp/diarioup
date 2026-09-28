@@ -5,6 +5,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 abstract interface class DatabaseKeyStore {
   Future<String> loadOrCreate();
+
+  Future<void> clear();
 }
 
 final class FlutterSecureDatabaseKeyStore implements DatabaseKeyStore {
@@ -25,4 +27,7 @@ final class FlutterSecureDatabaseKeyStore implements DatabaseKeyStore {
     await _storage.write(key: _storageKey, value: generated);
     return generated;
   }
+
+  @override
+  Future<void> clear() => _storage.delete(key: _storageKey);
 }

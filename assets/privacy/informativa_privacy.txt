@@ -1,0 +1,13 @@
+Informativa privacy locale di DiarioUp
+
+DiarioUp elabora sul dispositivo i dati necessari a mostrare compiti, materie, scadenze, note personali e stato di completamento. La password DidUP non viene memorizzata. Sessioni e chiavi locali sono conservate nello spazio sicuro del sistema operativo; il database locale è cifrato.
+
+I dati del diario non vengono inviati a servizi pubblicitari, analitici o di intelligenza artificiale. Le notifiche sono locali e mostrano contenuti generici. La condivisione e l'esportazione avvengono solo su azione esplicita dell'utente; le copie salvate o inviate tramite altre applicazioni restano sotto il controllo dell'utente e dei destinatari scelti.
+
+Il log diagnostico conserva nel database cifrato al massimo dieci eventi tecnici minimizzati. Non contiene password, token, cookie, nomi, codici scuola, testo dei compiti, note personali, URL o risposte di rete.
+
+Il comando "Elimina tutti i dati DiarioUp" rimuove dal dispositivo database, sessione, chiave di cifratura, immagini personalizzate, notifiche programmate ed esportazioni temporanee. Non elimina né modifica i dati originali conservati da Argo o dalla scuola.
+
+DiarioUp è un'app indipendente e non è affiliata ad Argo Software.
+
+Versione informativa: 1.0 - 29 settembre 2026.

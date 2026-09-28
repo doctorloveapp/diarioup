@@ -12,7 +12,7 @@
         "-File",
         "${workspaceFolder}\\tool\\build_sideload_release.ps1",
         "-Environment",
-        "demo"
+        "production"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

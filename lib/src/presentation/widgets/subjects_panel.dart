@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/agenda/homework_agenda_item.dart';
+import '../../domain/diagnostics/diagnostic_event.dart';
 import '../../domain/agenda/subject_agenda.dart';
 import '../design_system/diarioup_tokens.dart';
 import '../l10n/app_copy.dart';
@@ -71,6 +72,10 @@ final class SubjectsPanel extends ConsumerWidget {
         ),
       );
     } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.homework,
+        DiagnosticCode.completionUpdateFailed,
+      );
       if (!context.mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       messenger.hideCurrentSnackBar();
