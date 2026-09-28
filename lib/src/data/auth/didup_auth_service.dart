@@ -136,6 +136,9 @@ final class DioDidupAuthService implements DidupAuthService {
       },
     );
     final start = await _dio.getUri<Object?>(authorizeUri);
+    final oauthCookies = <String>[];
+    _collectResponseCookies(start, oauthCookies);
+    await _network.clearTransientCookies();
     final challengeLocation = _redirectLocation(start);
     final loginChallenge = challengeLocation.queryParameters['login_challenge'];
     if (loginChallenge == null || loginChallenge.isEmpty) {
@@ -158,6 +161,7 @@ final class DioDidupAuthService implements DidupAuthService {
     if (login.statusCode == 401 || login.statusCode == 403) {
       throw const AuthenticationFailure();
     }
+    await _network.clearTransientCookies();
 
     var location = _redirectLocation(login);
     for (var redirects = 0; redirects < 6; redirects++) {
@@ -172,7 +176,22 @@ final class DioDidupAuthService implements DidupAuthService {
       if (!_config.isTrustedNetworkUri(location)) {
         throw const CompatibilityFailure('Redirect OAuth non ammesso.');
       }
-      final response = await _dio.getUri<Object?>(location);
+      // Il flusso SSO Argo attraversa i due host autorizzati e richiede i
+      // cookie raccolti al primo e al terzo passaggio, indipendentemente dal
+      // dominio che li ha emessi. Il cookie jar resta comunque effimero.
+      final sendsOauthCookies = redirects == 0 || redirects >= 2;
+      final response = await _dio.getUri<Object?>(
+        location,
+        options: sendsOauthCookies && oauthCookies.isNotEmpty
+            ? Options(
+                headers: <String, Object>{'cookie': oauthCookies.join('; ')},
+              )
+            : null,
+      );
+      if (redirects == 0) {
+        _collectResponseCookies(response, oauthCookies);
+      }
+      await _network.clearTransientCookies();
       location = _redirectLocation(response);
     }
     throw const AuthenticationFailure('Troppi redirect durante il login.');
@@ -301,6 +320,21 @@ final class DioDidupAuthService implements DidupAuthService {
       (int _) => alphabet[_random.nextInt(alphabet.length)],
       growable: false,
     ).join();
+  }
+}
+
+void _collectResponseCookies(
+  Response<Object?> response,
+  List<String> destination,
+) {
+  final headers = response.headers.map['set-cookie'] ?? const <String>[];
+  for (final header in headers) {
+    final pair = header.split(';').first.trim();
+    final separator = pair.indexOf('=');
+    if (separator <= 0) continue;
+    final name = pair.substring(0, separator);
+    destination.removeWhere((cookie) => cookie.startsWith('$name='));
+    destination.add(pair);
   }
 }
 

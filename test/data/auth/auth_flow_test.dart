@@ -17,16 +17,37 @@ void main() {
           expect(request.uri.queryParameters['code_challenge_method'], 'S256');
           return redirectResponse(
             '${config.ssoLoginUri}?login_challenge=synthetic-challenge',
+            cookies: const <String>[
+              'oauth_csrf=csrf-value; Path=/; Secure; HttpOnly',
+            ],
           );
         }
         if (request.uri.path == '/auth/sso/login') {
           final form = request.data! as Map<String, String>;
           expect(form['password'], isNotEmpty);
+          expect(request.headers['cookie'], isNull);
           return redirectResponse(
-            '${config.oauthAuthorizeUri.origin}/oauth2/continue',
+            '${config.oauthAuthorizeUri.origin}/oauth2/continue-1',
           );
         }
-        if (request.uri.path == '/oauth2/continue') {
+        if (request.uri.path == '/oauth2/continue-1') {
+          expect(request.headers['cookie'], contains('oauth_csrf=csrf-value'));
+          return redirectResponse(
+            '${config.ssoLoginUri.resolve('/auth/sso/continue-2')}',
+            cookies: const <String>[
+              'sso_session=sso-value; Path=/; Secure; HttpOnly',
+            ],
+          );
+        }
+        if (request.uri.path == '/auth/sso/continue-2') {
+          expect(request.headers['cookie'], isNull);
+          return redirectResponse(
+            '${config.oauthAuthorizeUri.origin}/oauth2/continue-3',
+          );
+        }
+        if (request.uri.path == '/oauth2/continue-3') {
+          expect(request.headers['cookie'], contains('oauth_csrf=csrf-value'));
+          expect(request.headers['cookie'], contains('sso_session=sso-value'));
           return redirectResponse(
             '${config.redirectUri}?code=synthetic-code&state=$state',
           );

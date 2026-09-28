@@ -41,11 +41,15 @@ ResponseBody jsonResponse(
   },
 );
 
-ResponseBody redirectResponse(String location) => ResponseBody.fromString(
+ResponseBody redirectResponse(
+  String location, {
+  List<String> cookies = const <String>[],
+}) => ResponseBody.fromString(
   '',
   302,
   headers: <String, List<String>>{
     'location': <String>[location],
+    if (cookies.isNotEmpty) 'set-cookie': cookies,
   },
 );
 
