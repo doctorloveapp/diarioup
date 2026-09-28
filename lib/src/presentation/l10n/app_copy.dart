@@ -28,6 +28,22 @@ abstract final class AppCopy {
   static const String agenda = 'Agenda';
   static const String subjects = 'Materie';
   static const String settings = 'Impostazioni';
+  static const String personalization = 'Personalizzazione';
+  static const String personalizationBody =
+      'Scegli immagini locali per rendere il diario più personale.';
+  static const String profilePhoto = 'Foto profilo';
+  static const String diaryBackground = 'Sfondo del diario';
+  static const String chooseImage = 'Scegli immagine';
+  static const String changeImage = 'Cambia';
+  static const String removeImage = 'Rimuovi';
+  static const String noCustomImage = 'Placeholder DiarioUp';
+  static const String customImage = 'Immagine personalizzata';
+  static const String imageSaved = 'Immagine salvata';
+  static const String imageRemoved = 'Immagine rimossa';
+  static const String imageSaveError =
+      'Immagine non valida o impossibile da salvare.';
+  static const String customizationLoadError =
+      'Impossibile leggere la personalizzazione.';
   static const String signOut = 'Disconnetti profilo';
   static const String dashboardGreeting = 'Bentornato';
   static const String today = 'Oggi';
@@ -95,6 +111,23 @@ abstract final class AppCopy {
   static const String originArgo = 'DidUP';
   static const String originManual = 'Inserimento manuale';
   static const String lastUpdate = 'Ultimo aggiornamento';
+  static const String reminders = 'Promemoria';
+  static const String remindersBody =
+      'Un riepilogo locale alle 18:00 del giorno prima. Nessun dettaglio '
+      'scolastico compare nella schermata bloccata.';
+  static const String enableReminders = 'Attiva promemoria';
+  static const String reminderTime = 'Orario del riepilogo';
+  static const String reminderPermissionGranted = 'Permesso concesso';
+  static const String reminderPermissionDenied = 'Permesso non concesso';
+  static const String reminderPermissionUnavailable =
+      'Promemoria non disponibili';
+  static const String openNotificationSettings = 'Apri impostazioni';
+  static const String reminderPermissionRequired =
+      'Per attivare i promemoria, consenti le notifiche nelle impostazioni.';
+  static const String reminderUpdateError =
+      'Impossibile aggiornare i promemoria. Riprova.';
+  static const String quietHoursError =
+      'Scegli un orario tra le 07:00 e le 20:59.';
 
   static String countdownInDays(int days) => 'Tra $days giorni';
 

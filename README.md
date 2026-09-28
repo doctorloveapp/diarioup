@@ -1,10 +1,11 @@
 # DiarioUp
 
 Questo repository contiene il client Flutter DiarioUp e l'adattatore isolato
-in sola lettura verso DidUP. Le Fasi 1.0-1.4 includono protocollo, autenticazione,
+in sola lettura verso DidUP. Le Fasi 1.0-1.5 includono protocollo, autenticazione,
 database locale cifrato, sincronizzazione, agenda, materie, checklist, ricerca,
-filtri, dettaglio e inserimento manuale. Il database Drift è la sola fonte dati
-della UI.
+filtri, dettaglio, inserimento manuale, promemoria locali offline e
+personalizzazione locale di profilo e diario. Il database Drift è la sola
+fonte dati della UI.
 
 Il modulo rispetta la direzione delle dipendenze `Presentation -> Domain <- Data`:
 

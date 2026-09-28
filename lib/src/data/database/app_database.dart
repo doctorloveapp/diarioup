@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -7,6 +9,9 @@ import '../../domain/agenda/subject_agenda.dart';
 import '../../domain/auth/student_profile.dart' as domain;
 import '../../domain/homework/homework.dart' as domain;
 import '../../domain/homework/school_date.dart';
+import '../../domain/profile/profile_customization.dart';
+import '../../domain/reminders/reminder_plan.dart';
+import '../../domain/reminders/reminder_preferences.dart';
 import '../../domain/sync/didup_sync.dart';
 import 'tables.dart';
 
@@ -110,6 +115,58 @@ final class AppDatabase extends _$AppDatabase {
     }
     return profile.id;
   }
+
+  Stream<ProfileCustomization> watchProfileCustomization(
+    String sourceProfileId,
+  ) async* {
+    final user = await _userForSourceProfile(sourceProfileId);
+    yield* (select(
+      localUsers,
+    )..where((table) => table.id.equals(user.id))).watchSingle().map(
+      (row) => _profileCustomization(row.preferencesJson, sourceProfileId),
+    );
+  }
+
+  Future<ProfileCustomization> readProfileCustomization(
+    String sourceProfileId,
+  ) async {
+    final user = await _userForSourceProfile(sourceProfileId);
+    return _profileCustomization(user.preferencesJson, sourceProfileId);
+  }
+
+  Future<void> setProfileImagePath(
+    String sourceProfileId,
+    String? relativePath,
+  ) => _setProfileCustomizationPath(
+    sourceProfileId,
+    key: 'profileImagePath',
+    relativePath: relativePath,
+  );
+
+  Future<void> setDiaryBackgroundPath(
+    String sourceProfileId,
+    String? relativePath,
+  ) => _setProfileCustomizationPath(
+    sourceProfileId,
+    key: 'diaryBackgroundPath',
+    relativePath: relativePath,
+  );
+
+  Future<void> _setProfileCustomizationPath(
+    String sourceProfileId, {
+    required String key,
+    required String? relativePath,
+  }) => _updateUserPreferences(sourceProfileId, (values) {
+    final byProfile = _objectMap(values['profileCustomization']);
+    final profileValues = _objectMap(byProfile[sourceProfileId]);
+    if (relativePath == null) {
+      profileValues.remove(key);
+    } else {
+      profileValues[key] = relativePath;
+    }
+    byProfile[sourceProfileId] = profileValues;
+    values['profileCustomization'] = byProfile;
+  });
 
   Future<DateTime?> lastSuccessfulSync(String internalProfileId) async {
     final state =
@@ -306,6 +363,78 @@ final class AppDatabase extends _$AppDatabase {
               (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
             );
       return result;
+    });
+  }
+
+  Stream<ReminderPreferences> watchReminderPreferences(
+    String sourceProfileId,
+  ) async* {
+    final user = await _userForSourceProfile(sourceProfileId);
+    yield* (select(localUsers)..where((table) => table.id.equals(user.id)))
+        .watchSingle()
+        .map((row) => _reminderPreferences(row.preferencesJson));
+  }
+
+  Future<ReminderPreferences> readReminderPreferences(
+    String sourceProfileId,
+  ) async {
+    final user = await _userForSourceProfile(sourceProfileId);
+    return _reminderPreferences(user.preferencesJson);
+  }
+
+  Future<void> writeReminderPreferences(
+    String sourceProfileId,
+    ReminderPreferences preferences,
+  ) => _updateUserPreferences(sourceProfileId, (values) {
+    values['reminders'] = <String, Object>{
+      'enabled': preferences.enabled,
+      'hour': preferences.hour,
+      'minute': preferences.minute,
+    };
+  });
+
+  Future<void> replaceReminderRecords(
+    String sourceProfileId,
+    List<ReminderPlanEntry> entries,
+  ) async {
+    final profile = await _profileBySourceId(sourceProfileId);
+    if (profile == null) throw StateError('Profilo locale non inizializzato.');
+    final connection = await (select(
+      argoConnections,
+    )..where((table) => table.id.equals(profile.connectionId))).getSingle();
+    final profileHomework = await (select(
+      homeworkItems,
+    )..where((table) => table.profileId.equals(profile.id))).get();
+    final homeworkIds = profileHomework
+        .map((homework) => homework.id)
+        .toList(growable: false);
+
+    await transaction(() async {
+      if (homeworkIds.isNotEmpty) {
+        await (delete(reminders)..where(
+              (table) =>
+                  table.userId.equals(connection.userId) &
+                  table.homeworkId.isIn(homeworkIds),
+            ))
+            .go();
+      }
+      for (final entry in entries) {
+        final remindAt = DateTime(
+          entry.remindOn.year,
+          entry.remindOn.month,
+          entry.remindOn.day,
+          entry.hour,
+          entry.minute,
+        ).toUtc();
+        await into(reminders).insert(
+          RemindersCompanion.insert(
+            id: 'local:${entry.notificationId}',
+            userId: connection.userId,
+            homeworkId: entry.homeworkId,
+            remindAt: remindAt,
+          ),
+        );
+      }
     });
   }
 
@@ -629,6 +758,31 @@ final class AppDatabase extends _$AppDatabase {
       (select(studentProfiles)
             ..where((table) => table.sourceProfileId.equals(sourceProfileId)))
           .getSingleOrNull();
+
+  Future<LocalUser> _userForSourceProfile(String sourceProfileId) async {
+    final profile = await _profileBySourceId(sourceProfileId);
+    if (profile == null) throw StateError('Profilo locale non inizializzato.');
+    final connection = await (select(
+      argoConnections,
+    )..where((table) => table.id.equals(profile.connectionId))).getSingle();
+    return (select(
+      localUsers,
+    )..where((table) => table.id.equals(connection.userId))).getSingle();
+  }
+
+  Future<void> _updateUserPreferences(
+    String sourceProfileId,
+    void Function(Map<String, Object?> values) updateValues,
+  ) => transaction(() async {
+    final user = await _userForSourceProfile(sourceProfileId);
+    final values = _preferencesMap(user.preferencesJson);
+    updateValues(values);
+    await (update(
+      localUsers,
+    )..where((table) => table.id.equals(user.id))).write(
+      LocalUsersCompanion(preferencesJson: Value<String>(jsonEncode(values))),
+    );
+  });
 }
 
 final class _MutableSubjectAgenda {
@@ -657,5 +811,54 @@ SchoolDate? _schoolDate(String? value) {
     int.parse(parts[0]),
     int.parse(parts[1]),
     int.parse(parts[2]),
+  );
+}
+
+Map<String, Object?> _preferencesMap(String value) {
+  try {
+    final decoded = jsonDecode(value);
+    if (decoded is Map<String, Object?>) {
+      return Map<String, Object?>.of(decoded);
+    }
+  } on FormatException {
+    // Le preferenze non valide vengono ricostruite con default sicuri.
+  }
+  return <String, Object?>{};
+}
+
+Map<String, Object?> _objectMap(Object? value) {
+  return value is Map<String, Object?>
+      ? Map<String, Object?>.of(value)
+      : <String, Object?>{};
+}
+
+ProfileCustomization _profileCustomization(
+  String preferencesJson,
+  String sourceProfileId,
+) {
+  final preferences = _preferencesMap(preferencesJson);
+  final byProfile = _objectMap(preferences['profileCustomization']);
+  final profile = _objectMap(byProfile[sourceProfileId]);
+  final profileImagePath = profile['profileImagePath'];
+  final diaryBackgroundPath = profile['diaryBackgroundPath'];
+  return ProfileCustomization(
+    profileImagePath: profileImagePath is String ? profileImagePath : null,
+    diaryBackgroundPath: diaryBackgroundPath is String
+        ? diaryBackgroundPath
+        : null,
+  );
+}
+
+ReminderPreferences _reminderPreferences(String value) {
+  final reminders = _preferencesMap(value)['reminders'];
+  if (reminders is! Map<String, Object?>) {
+    return const ReminderPreferences();
+  }
+  final hour = reminders['hour'];
+  final minute = reminders['minute'];
+  return ReminderPreferences(
+    enabled: reminders['enabled'] == true,
+    hour: hour is int && hour >= 0 && hour <= 23 ? hour : 18,
+    minute: minute is int && minute >= 0 && minute <= 59 ? minute : 0,
   );
 }

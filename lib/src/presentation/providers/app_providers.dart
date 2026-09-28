@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/app_environment.dart';
@@ -13,10 +15,19 @@ import '../../data/demo/unavailable_didup_repository.dart';
 import '../../data/network/didup_network_client.dart';
 import '../../data/normalization/homework_normalizer.dart';
 import '../../data/protocol/didup_protocol_config.dart';
+import '../../data/profile/image_picker_gallery_selector.dart';
+import '../../data/profile/local_profile_customization_repository.dart';
+import '../../data/reminders/local_reminder_service.dart';
+import '../../data/reminders/reminder_coordinator.dart';
 import '../../data/repositories/didup_repository_impl.dart';
 import '../../domain/repositories/didup_repository.dart';
 import '../../domain/agenda/homework_agenda_item.dart';
 import '../../domain/agenda/subject_agenda.dart';
+import '../../domain/reminders/reminder_preferences.dart';
+import '../../domain/reminders/reminder_service.dart';
+import '../../domain/profile/gallery_image_selector.dart';
+import '../../domain/profile/profile_customization.dart';
+import '../../domain/repositories/profile_customization_repository.dart';
 import '../../domain/sync/didup_sync.dart';
 import '../../domain/use_cases/authenticate_with_didup.dart';
 
@@ -32,16 +43,66 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((Ref ref) async {
   return database;
 });
 
+final galleryImageSelectorProvider = Provider<GalleryImageSelector>(
+  (Ref ref) => ImagePickerGallerySelector(),
+);
+
+final profileCustomizationRepositoryProvider =
+    FutureProvider<ProfileCustomizationRepository>((Ref ref) async {
+      return LocalProfileCustomizationRepository(
+        database: await ref.watch(appDatabaseProvider.future),
+      );
+    });
+
+final profileCustomizationProvider =
+    StreamProvider.family<ProfileCustomization, String>((
+      Ref ref,
+      profileId,
+    ) async* {
+      final repository = await ref.watch(
+        profileCustomizationRepositoryProvider.future,
+      );
+      yield* repository.watch(profileId);
+    });
+
+final customizationImageProvider = FutureProvider.autoDispose
+    .family<Uint8List?, String>((Ref ref, relativePath) async {
+      final repository = await ref.watch(
+        profileCustomizationRepositoryProvider.future,
+      );
+      return repository.loadImage(relativePath);
+    });
+
+final reminderServiceProvider = Provider<ReminderService>(
+  (Ref ref) => LocalReminderService(),
+);
+
+final reminderCoordinatorProvider = FutureProvider<ReminderCoordinator>((
+  Ref ref,
+) async {
+  return ReminderCoordinator(
+    database: await ref.watch(appDatabaseProvider.future),
+    service: ref.watch(reminderServiceProvider),
+  );
+});
+
 final didupRepositoryProvider = FutureProvider<DidupRepository>((
   Ref ref,
 ) async {
   final environment = ref.watch(appEnvironmentProvider);
   final database = await ref.watch(appDatabaseProvider.future);
+  final reminderCoordinator = await ref.watch(
+    reminderCoordinatorProvider.future,
+  );
   final normalizer = HomeworkNormalizer(
     identityRegistry: DriftHomeworkIdentityRegistry(database: database),
   );
   if (environment.isDemo) {
-    return DemoDidupRepository(database: database, normalizer: normalizer);
+    return DemoDidupRepository(
+      database: database,
+      normalizer: normalizer,
+      onHomeworkChanged: reminderCoordinator.reschedule,
+    );
   }
   if (!environment.hasDidupConfiguration) {
     return const UnavailableDidupRepository();
@@ -62,6 +123,7 @@ final didupRepositoryProvider = FutureProvider<DidupRepository>((
     sessionStore: sessionStore,
     normalizer: normalizer,
     adapterVersion: environment.didupClientVersion,
+    onHomeworkChanged: reminderCoordinator.reschedule,
   );
 });
 
@@ -116,4 +178,28 @@ final syncProfileProvider = FutureProvider.family<DidupSyncResult, String>((
 ) async {
   final repository = await ref.watch(didupRepositoryProvider.future);
   return repository.sync(profileId: profileId);
+});
+
+final reminderPreferencesProvider =
+    StreamProvider.family<ReminderPreferences, String>((
+      Ref ref,
+      profileId,
+    ) async* {
+      final coordinator = await ref.watch(reminderCoordinatorProvider.future);
+      yield* coordinator.watchPreferences(profileId);
+    });
+
+final reminderPermissionProvider = FutureProvider<ReminderPermissionStatus>((
+  Ref ref,
+) async {
+  final coordinator = await ref.watch(reminderCoordinatorProvider.future);
+  return coordinator.permissionStatus();
+});
+
+final reminderBootstrapProvider = FutureProvider.family<void, String>((
+  Ref ref,
+  profileId,
+) async {
+  final coordinator = await ref.watch(reminderCoordinatorProvider.future);
+  await coordinator.reschedule(profileId);
 });

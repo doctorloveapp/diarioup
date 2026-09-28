@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +16,7 @@ import '../widgets/brand_mark.dart';
 import '../widgets/homework_tile.dart';
 import '../widgets/manual_entry_dialogs.dart';
 import '../widgets/subjects_panel.dart';
+import 'settings_page.dart';
 
 final class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -22,13 +25,50 @@ final class DashboardPage extends ConsumerStatefulWidget {
   ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-final class _DashboardPageState extends ConsumerState<DashboardPage> {
+final class _DashboardPageState extends ConsumerState<DashboardPage>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    ref.invalidate(reminderPermissionProvider);
+    final profileId = ref.read(appFlowProvider).activeProfile?.sourceProfileId;
+    if (profileId != null) {
+      ref.invalidate(reminderBootstrapProvider(profileId));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(appFlowProvider).activeProfile;
     final profileId = profile?.sourceProfileId;
+    final customization = profileId == null
+        ? null
+        : ref.watch(profileCustomizationProvider(profileId)).value;
+    final profileImagePath = customization?.profileImagePath;
+    final backgroundImagePath = customization?.diaryBackgroundPath;
+    final profileImage = profileImagePath == null
+        ? null
+        : ref.watch(customizationImageProvider(profileImagePath)).value;
+    final backgroundImage = backgroundImagePath == null
+        ? null
+        : ref.watch(customizationImageProvider(backgroundImagePath)).value;
+    if (profileId != null) {
+      ref.watch(reminderBootstrapProvider(profileId));
+    }
     final pages = <Widget>[
       _AgendaPanel(
         profileId: profileId,
@@ -37,7 +77,7 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
       profileId == null
           ? const SizedBox.shrink()
           : SubjectsPanel(profileId: profileId),
-      _SettingsPanel(onSignOut: _signOut),
+      SettingsPage(profileId: profileId, onSignOut: _signOut),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -47,18 +87,39 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
             padding: const EdgeInsets.only(right: DiarioUpSpacing.md),
             child: CircleAvatar(
               backgroundColor: DiarioUpColors.indaco.withValues(alpha: 0.16),
-              child: Text(
-                _initial(profile?.displayLabel),
-                style: const TextStyle(
-                  color: DiarioUpColors.indaco,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: profileImage == null
+                  ? Text(
+                      _initial(profile?.displayLabel),
+                      style: const TextStyle(
+                        color: DiarioUpColors.indaco,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  : ClipOval(
+                      child: SizedBox.expand(
+                        child: Image.memory(
+                          profileImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Text(
+                              _initial(profile?.displayLabel),
+                              style: const TextStyle(
+                                color: DiarioUpColors.indaco,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
             ),
           ),
         ],
       ),
-      body: SafeArea(child: pages[_selectedIndex]),
+      body: _DashboardBackground(
+        imageBytes: backgroundImage,
+        child: SafeArea(child: pages[_selectedIndex]),
+      ),
       floatingActionButton: profileId == null || _selectedIndex == 2
           ? null
           : FloatingActionButton.extended(
@@ -97,6 +158,11 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Future<void> _signOut() async {
+    final profileId = ref.read(appFlowProvider).activeProfile?.sourceProfileId;
+    if (profileId != null) {
+      final coordinator = await ref.read(reminderCoordinatorProvider.future);
+      await coordinator.cancelAll(profileId);
+    }
     final repository = await ref.read(didupRepositoryProvider.future);
     await repository.logout();
     ref.read(appFlowProvider.notifier).signOut();
@@ -145,9 +211,9 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _initial(String? value) {
@@ -155,6 +221,41 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
     return text == null || text.isEmpty
         ? 'D'
         : text.substring(0, 1).toUpperCase();
+  }
+}
+
+final class _DashboardBackground extends StatelessWidget {
+  const _DashboardBackground({required this.imageBytes, required this.child});
+
+  final Uint8List? imageBytes;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = imageBytes;
+    if (bytes == null) return child;
+    final overlayOpacity = Theme.of(context).brightness == Brightness.dark
+        ? 0.90
+        : 0.84;
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        ExcludeSemantics(
+          child: Image.memory(
+            bytes,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                const SizedBox.shrink(),
+          ),
+        ),
+        ColoredBox(
+          color: Theme.of(
+            context,
+          ).scaffoldBackgroundColor.withValues(alpha: overlayOpacity),
+        ),
+        child,
+      ],
+    );
   }
 }
 
@@ -272,7 +373,9 @@ final class _AgendaPanelState extends ConsumerState<_AgendaPanel> {
         isDone: value,
       );
       if (!mounted || !value) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: const Text(AppCopy.homeworkCompleted),
           action: SnackBarAction(
@@ -289,7 +392,9 @@ final class _AgendaPanelState extends ConsumerState<_AgendaPanel> {
       );
     } on Object {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         const SnackBar(content: Text(AppCopy.completionUpdateError)),
       );
     }
@@ -493,33 +598,6 @@ final class _AgendaError extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-final class _SettingsPanel extends StatelessWidget {
-  const _SettingsPanel({required this.onSignOut});
-
-  final Future<void> Function() onSignOut;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(DiarioUpSpacing.lg),
-      children: <Widget>[
-        Text(
-          AppCopy.settings,
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: DiarioUpSpacing.lg),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.logout_rounded),
-            title: const Text(AppCopy.signOut),
-            onTap: onSignOut,
-          ),
-        ),
-      ],
     );
   }
 }

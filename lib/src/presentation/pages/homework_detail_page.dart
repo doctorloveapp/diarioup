@@ -41,8 +41,16 @@ final class _HomeworkDetailPageState extends ConsumerState<HomeworkDetailPage> {
         homeworkId: widget.homeworkId,
       )),
     );
+    final loadedItem = detail.asData?.value;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text(AppCopy.homeworkDetail)),
+      bottomNavigationBar: loadedItem == null
+          ? null
+          : _SaveNoteBar(
+              isSaving: _isSaving,
+              onSave: () => _saveNote(profileId, loadedItem),
+            ),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => _DetailError(
@@ -64,8 +72,6 @@ final class _HomeworkDetailPageState extends ConsumerState<HomeworkDetailPage> {
           return _DetailContent(
             item: item,
             noteController: _noteController,
-            isSaving: _isSaving,
-            onSaveNote: () => _saveNote(profileId, item),
             onCompletionChanged: (value) =>
                 _setCompleted(profileId, item, value),
           );
@@ -84,14 +90,10 @@ final class _HomeworkDetailPageState extends ConsumerState<HomeworkDetailPage> {
         note: _noteController.text,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text(AppCopy.noteSaved)));
+      _showMessage(AppCopy.noteSaved);
     } on Object {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text(AppCopy.noteSaveError)));
+      _showMessage(AppCopy.noteSaveError);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -110,7 +112,9 @@ final class _HomeworkDetailPageState extends ConsumerState<HomeworkDetailPage> {
         isDone: value,
       );
       if (!mounted || !value) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: const Text(AppCopy.homeworkCompleted),
           action: SnackBarAction(
@@ -127,10 +131,14 @@ final class _HomeworkDetailPageState extends ConsumerState<HomeworkDetailPage> {
       );
     } on Object {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppCopy.completionUpdateError)),
-      );
+      _showMessage(AppCopy.completionUpdateError);
     }
+  }
+
+  void _showMessage(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -138,15 +146,11 @@ final class _DetailContent extends StatelessWidget {
   const _DetailContent({
     required this.item,
     required this.noteController,
-    required this.isSaving,
-    required this.onSaveNote,
     required this.onCompletionChanged,
   });
 
   final HomeworkAgendaItem item;
   final TextEditingController noteController;
-  final bool isSaving;
-  final VoidCallback onSaveNote;
   final ValueChanged<bool> onCompletionChanged;
 
   @override
@@ -155,7 +159,13 @@ final class _DetailContent extends StatelessWidget {
       identity: item.subjectId ?? item.subjectName ?? item.id,
     );
     return ListView(
-      padding: const EdgeInsets.all(DiarioUpSpacing.lg),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(
+        DiarioUpSpacing.lg,
+        DiarioUpSpacing.lg,
+        DiarioUpSpacing.lg,
+        DiarioUpSpacing.xl,
+      ),
       children: <Widget>[
         Row(
           children: <Widget>[
@@ -224,23 +234,12 @@ final class _DetailContent extends StatelessWidget {
           controller: noteController,
           minLines: 3,
           maxLines: 8,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          scrollPadding: const EdgeInsets.only(bottom: 160),
           decoration: const InputDecoration(
             hintText: AppCopy.personalNoteHint,
             alignLabelWithHint: true,
-          ),
-        ),
-        const SizedBox(height: DiarioUpSpacing.sm),
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton.icon(
-            onPressed: isSaving ? null : onSaveNote,
-            icon: isSaving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: const Text(AppCopy.saveNote),
           ),
         ),
       ],
@@ -263,10 +262,36 @@ final class _DetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon),
-      title: Text(label),
-      trailing: SizedBox(
-        width: 160,
-        child: Text(value, textAlign: TextAlign.end),
+      title: Text(label, maxLines: 1),
+      subtitle: Text(value),
+    );
+  }
+}
+
+final class _SaveNoteBar extends StatelessWidget {
+  const _SaveNoteBar({required this.isSaving, required this.onSave});
+
+  final bool isSaving;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(
+        DiarioUpSpacing.lg,
+        DiarioUpSpacing.sm,
+        DiarioUpSpacing.lg,
+        DiarioUpSpacing.sm,
+      ),
+      child: FilledButton.icon(
+        onPressed: isSaving ? null : onSave,
+        icon: isSaving
+            ? const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.save_outlined),
+        label: const Text(AppCopy.saveNote),
       ),
     );
   }

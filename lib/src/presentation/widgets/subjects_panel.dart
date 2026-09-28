@@ -53,7 +53,9 @@ final class SubjectsPanel extends ConsumerWidget {
         isDone: value,
       );
       if (!context.mounted || !value) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: const Text(AppCopy.homeworkCompleted),
           action: SnackBarAction(
@@ -70,7 +72,9 @@ final class SubjectsPanel extends ConsumerWidget {
       );
     } on Object {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         const SnackBar(content: Text(AppCopy.completionUpdateError)),
       );
     }

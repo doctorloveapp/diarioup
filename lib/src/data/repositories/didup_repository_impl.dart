@@ -23,6 +23,7 @@ final class DidupRepositoryImpl implements DidupRepository {
     required String adapterVersion,
     DidupDashboardSource? dashboardSource,
     DateTime Function()? now,
+    Future<void> Function(String profileId)? onHomeworkChanged,
   }) : _authService = authService,
        _client = client,
        _database = database,
@@ -31,7 +32,8 @@ final class DidupRepositoryImpl implements DidupRepository {
        _adapterVersion = adapterVersion,
        _dashboardSource =
            dashboardSource ?? NetworkDidupDashboardSource(client),
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _onHomeworkChanged = onHomeworkChanged;
 
   final DidupAuthService _authService;
   final DidupClient _client;
@@ -41,6 +43,7 @@ final class DidupRepositoryImpl implements DidupRepository {
   final DidupDashboardSource _dashboardSource;
   final String _adapterVersion;
   final DateTime Function() _now;
+  final Future<void> Function(String profileId)? _onHomeworkChanged;
 
   @override
   Future<AuthResult> login(AuthCredentials credentials) async {
@@ -100,6 +103,7 @@ final class DidupRepositoryImpl implements DidupRepository {
           adapterVersion: _adapterVersion,
         );
       });
+      await _refreshReminders(profileId);
       return DidupSyncResult(
         savedHomeworkCount: batch.homework.length,
         completedAt: attemptedAt,
@@ -142,22 +146,28 @@ final class DidupRepositoryImpl implements DidupRepository {
     required String profileId,
     required String homeworkId,
     required bool isDone,
-  }) => _database.setCompleted(
-    sourceProfileId: profileId,
-    homeworkId: homeworkId,
-    isDone: isDone,
-  );
+  }) async {
+    await _database.setCompleted(
+      sourceProfileId: profileId,
+      homeworkId: homeworkId,
+      isDone: isDone,
+    );
+    await _refreshReminders(profileId);
+  }
 
   @override
   Future<void> updateHomeworkNote({
     required String profileId,
     required String homeworkId,
     required String? note,
-  }) => _database.updatePersonalNote(
-    sourceProfileId: profileId,
-    homeworkId: homeworkId,
-    note: note,
-  );
+  }) async {
+    await _database.updatePersonalNote(
+      sourceProfileId: profileId,
+      homeworkId: homeworkId,
+      note: note,
+    );
+    await _refreshReminders(profileId);
+  }
 
   @override
   Future<String> createManualSubject({
@@ -171,8 +181,20 @@ final class DidupRepositoryImpl implements DidupRepository {
   );
 
   @override
-  Future<String> createManualHomework(ManualHomeworkInput input) =>
-      _database.createManualHomework(input);
+  Future<String> createManualHomework(ManualHomeworkInput input) async {
+    final id = await _database.createManualHomework(input);
+    await _refreshReminders(input.profileId);
+    return id;
+  }
+
+  Future<void> _refreshReminders(String profileId) async {
+    try {
+      await _onHomeworkChanged?.call(profileId);
+    } on Object {
+      // Il diario consolidato resta valido se il sistema operativo rifiuta
+      // temporaneamente una ripianificazione locale.
+    }
+  }
 
   @override
   Future<void> logout() => _client.logout();

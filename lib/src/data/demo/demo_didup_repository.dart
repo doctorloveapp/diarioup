@@ -15,11 +15,14 @@ final class DemoDidupRepository implements DidupRepository {
   const DemoDidupRepository({
     required AppDatabase database,
     required HomeworkNormalizer normalizer,
+    Future<void> Function(String profileId)? onHomeworkChanged,
   }) : _database = database,
-       _normalizer = normalizer;
+       _normalizer = normalizer,
+       _onHomeworkChanged = onHomeworkChanged;
 
   final AppDatabase _database;
   final HomeworkNormalizer _normalizer;
+  final Future<void> Function(String profileId)? _onHomeworkChanged;
 
   static const StudentProfile _profile = StudentProfile(
     sourceProfileId: 'demo-profile',
@@ -68,6 +71,7 @@ final class DemoDidupRepository implements DidupRepository {
         adapterVersion: 'demo-v1',
       );
     });
+    await _refreshReminders(profileId);
     return DidupSyncResult(
       savedHomeworkCount: batch.homework.length,
       completedAt: now,
@@ -101,22 +105,28 @@ final class DemoDidupRepository implements DidupRepository {
     required String profileId,
     required String homeworkId,
     required bool isDone,
-  }) => _database.setCompleted(
-    sourceProfileId: profileId,
-    homeworkId: homeworkId,
-    isDone: isDone,
-  );
+  }) async {
+    await _database.setCompleted(
+      sourceProfileId: profileId,
+      homeworkId: homeworkId,
+      isDone: isDone,
+    );
+    await _refreshReminders(profileId);
+  }
 
   @override
   Future<void> updateHomeworkNote({
     required String profileId,
     required String homeworkId,
     required String? note,
-  }) => _database.updatePersonalNote(
-    sourceProfileId: profileId,
-    homeworkId: homeworkId,
-    note: note,
-  );
+  }) async {
+    await _database.updatePersonalNote(
+      sourceProfileId: profileId,
+      homeworkId: homeworkId,
+      note: note,
+    );
+    await _refreshReminders(profileId);
+  }
 
   @override
   Future<String> createManualSubject({
@@ -130,8 +140,19 @@ final class DemoDidupRepository implements DidupRepository {
   );
 
   @override
-  Future<String> createManualHomework(ManualHomeworkInput input) =>
-      _database.createManualHomework(input);
+  Future<String> createManualHomework(ManualHomeworkInput input) async {
+    final id = await _database.createManualHomework(input);
+    await _refreshReminders(input.profileId);
+    return id;
+  }
+
+  Future<void> _refreshReminders(String profileId) async {
+    try {
+      await _onHomeworkChanged?.call(profileId);
+    } on Object {
+      // Una ripianificazione locale non può rendere fallita l'operazione dati.
+    }
+  }
 
   @override
   Future<void> logout() async {}
