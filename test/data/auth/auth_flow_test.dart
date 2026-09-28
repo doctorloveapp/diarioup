@@ -62,27 +62,33 @@ void main() {
           });
         }
         if (request.uri.path.endsWith('/login')) {
+          expect(request.headers['x-date-exp-auth'], isNotNull);
           return jsonResponse(200, <String, Object?>{
             'success': true,
-            'data': <Object?>[
-              <String, Object?>{
-                'token': 'synthetic-app-token-1',
-                'codMin': 'TEST0000',
-                'username': 'synthetic-user',
-                'opzioni': <Object?>[
-                  <String, Object?>{'chiave': 'compiti', 'valore': true},
-                ],
-              },
-              <String, Object?>{
-                'token': 'synthetic-app-token-2',
-                'codMin': 'TEST0000',
-                'username': 'synthetic-user',
-                'opzioni': <Object?>[],
-              },
-            ],
+            // Dal 28/09/2026 Argo puo annidare le righe in contenitori
+            // diversi da `data`; questo riproduce il formato osservato.
+            'data': <String, Object?>{
+              'dati': <Object?>[
+                <String, Object?>{
+                  'token': 'synthetic-app-token-1',
+                  'codMin': 'TEST0000',
+                  'username': 'synthetic-user',
+                  'opzioni': <Object?>[
+                    <String, Object?>{'chiave': 'compiti', 'valore': true},
+                  ],
+                },
+                <String, Object?>{
+                  'token': 'synthetic-app-token-2',
+                  'codMin': 'TEST0000',
+                  'username': 'synthetic-user',
+                  'opzioni': <Object?>[],
+                },
+              ],
+            },
           });
         }
         if (request.uri.path.endsWith('/profilo')) {
+          expect(request.headers['x-date-exp-auth'], isNotNull);
           final appToken = request.headers['x-auth-token'];
           final suffix = appToken == 'synthetic-app-token-1' ? '1' : '2';
           return jsonResponse(200, <String, Object?>{

@@ -60,7 +60,10 @@ void main() {
     await tester.tap(find.text(AppCopy.login));
     await tester.pumpAndSettle();
 
-    expect(find.text(AppCopy.loginRejectedOrUnavailable), findsOneWidget);
+    expect(
+      find.text('Argo non ha accettato le credenziali inserite.'),
+      findsOneWidget,
+    );
     expect(find.textContaining(AppCopy.dashboardGreeting), findsNothing);
   });
 

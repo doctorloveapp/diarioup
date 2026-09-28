@@ -47,8 +47,8 @@ final class LoginController extends Notifier<LoginState> {
     } on DidupFailure catch (failure) {
       _recordFailure();
       final message = switch (failure) {
-        AuthenticationFailure() ||
-        NetworkFailure() => AppCopy.loginRejectedOrUnavailable,
+        AuthenticationFailure() => failure.message,
+        NetworkFailure() => AppCopy.loginNetworkUnavailable,
         _ => failure.message,
       };
       state = LoginState(errorMessage: message);

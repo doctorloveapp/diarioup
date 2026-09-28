@@ -19,8 +19,8 @@ abstract final class AppCopy {
   static const String password = 'Password';
   static const String login = 'Accedi';
   static const String requiredField = 'Campo obbligatorio';
-  static const String loginRejectedOrUnavailable =
-      'Credenziali errate o servizio non raggiungibile. Riprova.';
+  static const String loginNetworkUnavailable =
+      'Impossibile contattare DidUP. Controlla la connessione e riprova.';
   static const String profileSelection = 'Scegli il profilo';
   static const String profileSelectionBody =
       'Questo accesso contiene più studenti. Seleziona quello da usare.';

@@ -97,7 +97,9 @@ final class DioDidupAuthService implements DidupAuthService {
       );
     } on DidupFailure {
       rethrow;
-    } on DioException catch (_) {
+    } on DioException catch (error) {
+      final cause = error.error;
+      if (cause is DidupFailure) throw cause;
       throw const NetworkFailure();
     } on FormatException catch (_) {
       throw const InvalidPayloadFailure();
@@ -107,14 +109,17 @@ final class DioDidupAuthService implements DidupAuthService {
   }
 
   _PkceAttempt _createPkceAttempt() {
-    final verifier = _randomString(64);
+    // Le lunghezze sono quelle usate dal client ufficiale e dai wrapper
+    // verificati. Sono valide per PKCE e riducono le differenze osservabili
+    // nel flusso SSO proprietario di Argo.
+    final verifier = _randomString(43);
     final digest = sha256.convert(utf8.encode(verifier)).bytes;
     final challenge = base64Url.encode(digest).replaceAll('=', '');
     return _PkceAttempt(
       verifier: verifier,
       challenge: challenge,
-      state: _randomString(32),
-      nonce: _randomString(32),
+      state: _randomString(22),
+      nonce: _randomString(22),
     );
   }
 
@@ -159,7 +164,9 @@ final class DioDidupAuthService implements DidupAuthService {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (login.statusCode == 401 || login.statusCode == 403) {
-      throw const AuthenticationFailure();
+      throw const AuthenticationFailure(
+        'Argo non ha accettato le credenziali inserite.',
+      );
     }
     await _network.clearTransientCookies();
 
@@ -243,16 +250,26 @@ final class DioDidupAuthService implements DidupAuthService {
         headers: <String, Object>{
           'authorization': 'Bearer ${oauth.accessToken}',
           'argo-client-version': _config.clientVersion,
-          'content-type': Headers.jsonContentType,
+          'content-type': '${Headers.jsonContentType}; charset=utf-8',
+          if (oauth.expiresAt case final expiresAt?)
+            'x-date-exp-auth': _formatArgoDate(expiresAt),
         },
       ),
     );
     _throwForStatus(response.statusCode);
     final body = _stringMap(response.data);
-    if (body['success'] == false) throw const AuthenticationFailure();
-    final data = body['data'];
-    if (data is! List<Object?>) throw const InvalidPayloadFailure();
-    return data;
+    if (body['success'] == false) {
+      throw const CompatibilityFailure(
+        'DidUP ha rifiutato il login applicativo. Verifica la compatibilita del client.',
+      );
+    }
+    final rows = _extractLoginRows(body);
+    if (rows.isEmpty) {
+      throw const InvalidPayloadFailure(
+        'Accesso OAuth riuscito, ma DidUP non ha restituito profili leggibili.',
+      );
+    }
+    return rows;
   }
 
   Future<Map<String, Object?>> _loadProfile(
@@ -267,6 +284,8 @@ final class DioDidupAuthService implements DidupAuthService {
           'argo-client-version': _config.clientVersion,
           'x-auth-token': _requiredString(loginContext, 'token'),
           'x-cod-min': _requiredString(loginContext, 'codMin'),
+          if (oauth.expiresAt case final expiresAt?)
+            'x-date-exp-auth': _formatArgoDate(expiresAt),
         },
       ),
     );
@@ -336,6 +355,44 @@ void _collectResponseCookies(
     destination.removeWhere((cookie) => cookie.startsWith('$name='));
     destination.add(pair);
   }
+}
+
+List<Object?> _extractLoginRows(Map<String, Object?> body) {
+  const containerKeys = <String>[
+    'data',
+    'dati',
+    'items',
+    'rows',
+    'result',
+    'results',
+  ];
+
+  List<Object?>? visit(Object? value) {
+    if (value is List<Object?>) {
+      final rows = value.whereType<Map<Object?, Object?>>().toList();
+      return rows.isEmpty ? null : rows;
+    }
+    if (value is! Map<Object?, Object?>) return null;
+    if (value.containsKey('token') && value.containsKey('codMin')) {
+      return <Object?>[value];
+    }
+    for (final key in containerKeys) {
+      final rows = visit(value[key]);
+      if (rows != null && rows.isNotEmpty) return rows;
+    }
+    return null;
+  }
+
+  return visit(body) ?? const <Object?>[];
+}
+
+String _formatArgoDate(DateTime value) {
+  final local = value.toLocal();
+  String two(int number) => number.toString().padLeft(2, '0');
+  String three(int number) => number.toString().padLeft(3, '0');
+  return '${local.year}-${two(local.month)}-${two(local.day)} '
+      '${two(local.hour)}:${two(local.minute)}:${two(local.second)}.'
+      '${three(local.millisecond)}';
 }
 
 final class _PkceAttempt {

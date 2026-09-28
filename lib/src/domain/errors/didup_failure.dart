@@ -8,7 +8,9 @@ sealed class DidupFailure implements Exception {
 }
 
 final class AuthenticationFailure extends DidupFailure {
-  const AuthenticationFailure([super.message = 'Accesso non riuscito.']);
+  const AuthenticationFailure([
+    super.message = 'Argo non ha accettato le credenziali inserite.',
+  ]);
 }
 
 final class SessionExpiredFailure extends DidupFailure {
