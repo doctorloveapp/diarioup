@@ -1,7 +1,7 @@
 name: diarioup
 description: Agenda Flutter con integrazione locale e isolata verso DidUP.
 publish_to: none
-version: 0.1.0+1
+version: 0.1.0+2
 
 environment:
   sdk: ">=3.10.0 <4.0.0"

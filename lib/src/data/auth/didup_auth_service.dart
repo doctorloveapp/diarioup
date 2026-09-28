@@ -28,10 +28,12 @@ final class DioDidupAuthService implements DidupAuthService {
     Random? secureRandom,
     DateTime Function()? now,
   }) : _network = networkClient,
+       _oauthDio = _createOauthDio(networkClient.dio),
        _random = secureRandom ?? Random.secure(),
        _now = now ?? DateTime.now;
 
   final DidupNetworkClient _network;
+  final Dio _oauthDio;
   final Random _random;
   final DateTime Function() _now;
 
@@ -140,19 +142,22 @@ final class DioDidupAuthService implements DidupAuthService {
         'code_challenge_method': 'S256',
       },
     );
-    final start = await _dio.getUri<Object?>(authorizeUri);
+    final start = await _oauthDio.getUri<Object?>(
+      authorizeUri,
+      options: Options(responseType: ResponseType.plain),
+    );
     final oauthCookies = <String>[];
     _collectResponseCookies(start, oauthCookies);
     await _network.clearTransientCookies();
-    final challengeLocation = _redirectLocation(start);
+    final challengeLocation = _redirectLocation(start, stage: 'Avvio OAuth');
     final loginChallenge = challengeLocation.queryParameters['login_challenge'];
     if (loginChallenge == null || loginChallenge.isEmpty) {
       throw const AuthenticationFailure('Challenge di login mancante.');
     }
 
-    final login = await _dio.postUri<Object?>(
+    final login = await _oauthDio.postUri<Object?>(
       _config.ssoLoginUri,
-      data: <String, String>{
+      data: _encodeForm(<String, String>{
         'challenge': loginChallenge,
         'client_id': _config.oauthClientId,
         'prefill': 'false',
@@ -160,8 +165,11 @@ final class DioDidupAuthService implements DidupAuthService {
         'username': credentials.username,
         'password': credentials.password,
         'login': 'true',
-      },
-      options: Options(contentType: Headers.formUrlEncodedContentType),
+      }),
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+        responseType: ResponseType.plain,
+      ),
     );
     if (login.statusCode == 401 || login.statusCode == 403) {
       throw const AuthenticationFailure(
@@ -170,7 +178,7 @@ final class DioDidupAuthService implements DidupAuthService {
     }
     await _network.clearTransientCookies();
 
-    var location = _redirectLocation(login);
+    var location = _redirectLocation(login, stage: 'Login SSO');
     for (var redirects = 0; redirects < 6; redirects++) {
       if (_config.isRedirectCallback(location)) {
         final returnedState = location.queryParameters['state'];
@@ -187,19 +195,23 @@ final class DioDidupAuthService implements DidupAuthService {
       // cookie raccolti al primo e al terzo passaggio, indipendentemente dal
       // dominio che li ha emessi. Il cookie jar resta comunque effimero.
       final sendsOauthCookies = redirects == 0 || redirects >= 2;
-      final response = await _dio.getUri<Object?>(
+      final response = await _oauthDio.getUri<Object?>(
         location,
         options: sendsOauthCookies && oauthCookies.isNotEmpty
             ? Options(
                 headers: <String, Object>{'cookie': oauthCookies.join('; ')},
+                responseType: ResponseType.plain,
               )
-            : null,
+            : Options(responseType: ResponseType.plain),
       );
       if (redirects == 0) {
         _collectResponseCookies(response, oauthCookies);
       }
       await _network.clearTransientCookies();
-      location = _redirectLocation(response);
+      location = _redirectLocation(
+        response,
+        stage: 'Redirect OAuth ${redirects + 1}',
+      );
     }
     throw const AuthenticationFailure('Troppi redirect durante il login.');
   }
@@ -323,10 +335,11 @@ final class DioDidupAuthService implements DidupAuthService {
     return result;
   }
 
-  Uri _redirectLocation(Response<Object?> response) {
+  Uri _redirectLocation(Response<Object?> response, {required String stage}) {
     final raw = response.headers.value('location');
     if (raw == null || raw.isEmpty) {
-      throw const AuthenticationFailure('Redirect di autenticazione mancante.');
+      final status = response.statusCode?.toString() ?? 'sconosciuto';
+      throw CompatibilityFailure('$stage senza redirect (HTTP $status).');
     }
     return response.requestOptions.uri.resolve(raw);
   }
@@ -349,13 +362,36 @@ void _collectResponseCookies(
   final headers = response.headers.map['set-cookie'] ?? const <String>[];
   for (final header in headers) {
     final pair = header.split(';').first.trim();
-    final separator = pair.indexOf('=');
-    if (separator <= 0) continue;
-    final name = pair.substring(0, separator);
-    destination.removeWhere((cookie) => cookie.startsWith('$name='));
-    destination.add(pair);
+    if (pair.indexOf('=') > 0) destination.add(pair);
   }
 }
+
+Dio _createOauthDio(Dio source) {
+  final options = source.options;
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: options.connectTimeout,
+      sendTimeout: options.sendTimeout,
+      receiveTimeout: options.receiveTimeout,
+      followRedirects: false,
+      maxRedirects: 0,
+      validateStatus: options.validateStatus,
+      responseType: ResponseType.plain,
+    ),
+  );
+  // Riusa solo il trasporto iniettato (anche nei test): nessun interceptor
+  // cookie automatico deve alterare la sequenza OAuth controllata a mano.
+  dio.httpClientAdapter = source.httpClientAdapter;
+  return dio;
+}
+
+String _encodeForm(Map<String, String> values) => values.entries
+    .map(
+      (entry) =>
+          '${Uri.encodeQueryComponent(entry.key)}='
+          '${Uri.encodeQueryComponent(entry.value)}',
+    )
+    .join('&');
 
 List<Object?> _extractLoginRows(Map<String, Object?> body) {
   const containerKeys = <String>[

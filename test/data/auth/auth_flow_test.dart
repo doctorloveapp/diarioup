@@ -23,7 +23,7 @@ void main() {
           );
         }
         if (request.uri.path == '/auth/sso/login') {
-          final form = request.data! as Map<String, String>;
+          final form = Uri.splitQueryString(request.data! as String);
           expect(form['password'], isNotEmpty);
           expect(request.headers['cookie'], isNull);
           return redirectResponse(
@@ -171,4 +171,34 @@ void main() {
     );
     expect(adapter.requests, hasLength(2));
   });
+
+  test(
+    'un redirect mancante identifica lo stadio senza dati sensibili',
+    () async {
+      final config = testProtocolConfig();
+      final adapter = ScriptedAdapter(
+        (RequestOptions request) => jsonResponse(200, <String, Object?>{}),
+      );
+      final dio = Dio()..httpClientAdapter = adapter;
+      final network = DidupNetworkClient.create(config: config, dio: dio);
+      final authService = DioDidupAuthService(networkClient: network);
+
+      await expectLater(
+        authService.login(
+          AuthCredentials(
+            schoolCode: 'TEST0000',
+            username: 'synthetic-user',
+            password: 'synthetic-password',
+          ),
+        ),
+        throwsA(
+          isA<CompatibilityFailure>().having(
+            (failure) => failure.message,
+            'message',
+            'Avvio OAuth senza redirect (HTTP 200).',
+          ),
+        ),
+      );
+    },
+  );
 }
