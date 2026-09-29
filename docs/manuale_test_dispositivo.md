@@ -145,10 +145,10 @@ alcuna richiesta di permesso durante onboarding o login.
 4. In **Impostazioni**, verificare che **Controlla aggiornamenti** sia attivo
    per impostazione predefinita. Con rete assente, l'avvio non deve rallentare
    né mostrare errori bloccanti.
-5. Quando su GitHub è pubblicata una versione con tag superiore a quella
-   installata, riaprire l'app e verificare il dialogo con il collegamento alla
-   pagina ufficiale della release. Disattivando il flag, il dialogo non deve
-   più essere proposto.
+5. Quando su GitHub è pubblicata una versione con tag semantico superiore a
+   quella installata (per esempio `v1.4.4`), riaprire l'app e verificare il
+   dialogo con il collegamento alla pagina ufficiale della release.
+   Disattivando il flag, il dialogo non deve più essere proposto.
 
 ## 6. Verifiche di qualità sul dispositivo
 

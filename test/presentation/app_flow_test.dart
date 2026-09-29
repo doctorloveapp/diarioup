@@ -238,12 +238,17 @@ void main() {
       tester.widget<SnackBar>(find.byType(SnackBar)).duration,
       const Duration(seconds: 3),
     );
+    expect(tester.widget<SnackBar>(find.byType(SnackBar)).persist, isFalse);
     expect(find.text(AppCopy.saveNote), findsOneWidget);
     await tester.tap(find.text(AppCopy.undo));
     await tester.pumpAndSettle();
     expect(tester.widget<Checkbox>(find.byType(Checkbox).first).value, isFalse);
     await tester.tap(find.byType(Checkbox).first);
     await tester.pumpAndSettle();
+    expect(find.text(AppCopy.undo), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.text(AppCopy.undo), findsNothing);
     await tester.tap(find.text(AppCopy.saveNote));
     await tester.pumpAndSettle();
     expect(find.text(AppCopy.noteSaved), findsOneWidget);

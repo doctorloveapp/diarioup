@@ -5,7 +5,7 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.4.3+10**.
+Versione corrente: **1.4.4+11**.
 
 ## Installazione dell'APK
 

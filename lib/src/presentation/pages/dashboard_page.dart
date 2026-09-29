@@ -589,6 +589,7 @@ final class _AgendaPanelState extends ConsumerState<_AgendaPanel> {
       messenger.showSnackBar(
         SnackBar(
           duration: const Duration(seconds: 3),
+          persist: false,
           content: const Text(AppCopy.homeworkCompleted),
           action: SnackBarAction(
             label: AppCopy.undo,

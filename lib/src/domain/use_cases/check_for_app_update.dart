@@ -34,9 +34,13 @@ bool isNewerVersion(String candidate, String installed) {
 }
 
 List<int>? _versionParts(String raw) {
-  var value = raw.trim().toLowerCase();
-  if (value.startsWith('v')) value = value.substring(1);
-  value = value.split('+').first.split('-').first;
+  final normalized = raw.trim().toLowerCase();
+  final versionMatch = RegExp(
+    r'(?:^|ver|v)(\d+(?:\.\d+)+)',
+  ).firstMatch(normalized);
+  final fallbackMatch = RegExp(r'(\d+(?:\.\d+)+)').firstMatch(normalized);
+  final value = (versionMatch ?? fallbackMatch)?.group(1);
+  if (value == null) return null;
   final segments = value.split('.');
   if (segments.isEmpty) return null;
   final parsed = <int>[];

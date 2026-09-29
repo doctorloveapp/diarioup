@@ -19,8 +19,10 @@ void main() {
       },
     );
 
-    test('confronta correttamente tag con prefisso v e build metadata', () {
+    test('confronta prefissi release e build metadata', () {
       expect(isNewerVersion('v1.4.1', '1.4.0+7'), isTrue);
+      expect(isNewerVersion('DiarioUpVer1.4.3', '1.4.0+7'), isTrue);
+      expect(isNewerVersion('DiarioUpVer1.4.3', '1.4.3+10'), isFalse);
       expect(isNewerVersion('v2.0.0', '1.99.99'), isTrue);
       expect(isNewerVersion('v1.3.9', '1.4.0'), isFalse);
       expect(isNewerVersion('release-candidate', '1.4.0'), isFalse);
