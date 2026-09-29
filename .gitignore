@@ -120,6 +120,8 @@ credentials/
 .tmp/
 tmp/
 temp/
+__pycache__/
+*.py[cod]
 *.tmp
 *.temp
 *.cache
