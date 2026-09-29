@@ -5,7 +5,7 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.3.0+5**.
+Versione corrente: **1.3.1+6**.
 
 ## Installazione dell'APK
 
@@ -24,7 +24,9 @@ adb install -r dist/DiarioUp-production-release-sideload.apk
 ```
 
 DiarioUp non contiene una modalità demo: ogni accesso viene verificato dal
-servizio DidUP. Una nuova installazione parte con il diario vuoto.
+servizio DidUP. Una nuova installazione parte con il diario vuoto. Dopo il primo
+accesso, la sessione viene ripristinata dal Secure Storage: la password non viene
+salvata e non deve essere reinserita a ogni apertura.
 
 ## Uso e condivisione
 

@@ -15,6 +15,7 @@ final class SessionCodec {
     'expiresAt': session.expiresAt?.toUtc().toIso8601String(),
     'schoolCode': session.schoolCode,
     'username': session.username,
+    'activeProfileId': session.activeProfileId,
     'profiles': <String, Object?>{
       for (final entry in session.profiles.entries)
         entry.key: <String, Object?>{
@@ -60,6 +61,7 @@ final class SessionCodec {
         schoolCode: _requiredString(root, 'schoolCode'),
         username: _requiredString(root, 'username'),
         profiles: profiles,
+        activeProfileId: _optionalString(root['activeProfileId']),
       );
     } on FormatException catch (_) {
       throw const InvalidPayloadFailure('Sessione locale non leggibile.');

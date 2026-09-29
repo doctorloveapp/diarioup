@@ -1,5 +1,6 @@
 abstract final class AppCopy {
   static const String appName = 'DiarioUp';
+  static const String restoringSession = 'Apertura del diario…';
   static const String independentService = 'App indipendente da Argo';
   static const String onboardingEyebrow = 'LA TUA AGENDA SCOLASTICA';
   static const String onboardingTitle = 'I compiti, finalmente in ordine.';
@@ -24,7 +25,7 @@ abstract final class AppCopy {
   static const String profileSelection = 'Scegli il profilo';
   static const String profileSelectionBody =
       'Questo accesso contiene più studenti. Seleziona quello da usare.';
-  static const String agenda = 'Agenda';
+  static const String agenda = 'Diario';
   static const String subjects = 'Materie';
   static const String settings = 'Impostazioni';
   static const String infoPrivacy = 'Info & Privacy';

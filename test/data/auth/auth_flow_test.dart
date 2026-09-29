@@ -139,6 +139,14 @@ void main() {
       expect(encoded, isNot(contains(password)));
       expect(encoded.toLowerCase(), isNot(contains('password')));
       expect(credentials.toString(), isNot(contains(password)));
+
+      final selectedProfile = result.profiles.last;
+      await repository.rememberActiveProfile(selectedProfile.sourceProfileId);
+      final restoredProfile = await repository.restoreActiveProfile();
+
+      expect(store.writeCount, 2);
+      expect(store.value!.activeProfileId, selectedProfile.sourceProfileId);
+      expect(restoredProfile!.sourceProfileId, selectedProfile.sourceProfileId);
     },
   );
 

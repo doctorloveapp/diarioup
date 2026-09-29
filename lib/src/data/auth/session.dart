@@ -28,6 +28,7 @@ final class DidupSession {
     required this.schoolCode,
     required this.username,
     required this.profiles,
+    this.activeProfileId,
   });
 
   final String accessToken;
@@ -40,6 +41,7 @@ final class DidupSession {
   /// Necessario solo al rinnovo applicativo osservato; resta nel secure storage.
   final String username;
   final Map<String, DidupProfileSession> profiles;
+  final String? activeProfileId;
 
   bool expiresWithin(DateTime now, Duration leeway) =>
       expiresAt != null && !expiresAt!.isAfter(now.add(leeway));
@@ -50,6 +52,7 @@ final class DidupSession {
     String? tokenType,
     List<String>? scopes,
     DateTime? expiresAt,
+    String? activeProfileId,
   }) => DidupSession(
     accessToken: accessToken ?? this.accessToken,
     refreshToken: refreshToken ?? this.refreshToken,
@@ -59,5 +62,6 @@ final class DidupSession {
     schoolCode: schoolCode,
     username: username,
     profiles: profiles,
+    activeProfileId: activeProfileId ?? this.activeProfileId,
   );
 }

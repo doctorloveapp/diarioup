@@ -12,6 +12,7 @@ final class TestDidupRepository implements DidupRepository {
 
   final AppDatabase _database;
   final HomeworkNormalizer _normalizer;
+  StudentProfile? _activeProfile;
 
   static const _profile = StudentProfile(
     sourceProfileId: 'test-profile',
@@ -24,6 +25,17 @@ final class TestDidupRepository implements DidupRepository {
   Future<AuthResult> login(AuthCredentials credentials) async {
     await _database.storeProfiles(const <StudentProfile>[_profile]);
     return const AuthResult(profiles: <StudentProfile>[_profile]);
+  }
+
+  @override
+  Future<StudentProfile?> restoreActiveProfile() async => _activeProfile;
+
+  @override
+  Future<void> rememberActiveProfile(String profileId) async {
+    if (profileId != _profile.sourceProfileId) {
+      throw StateError('Profilo di test sconosciuto.');
+    }
+    _activeProfile = _profile;
   }
 
   @override

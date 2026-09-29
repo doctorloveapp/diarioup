@@ -9,8 +9,10 @@ import '../pages/info_privacy_page.dart';
 import '../pages/login_page.dart';
 import '../pages/onboarding_page.dart';
 import '../pages/privacy_notice_page.dart';
+import '../pages/startup_page.dart';
 
 abstract final class AppRoutes {
+  static const String startup = '/startup';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String dashboard = '/dashboard';
@@ -36,11 +38,20 @@ final routerRefreshProvider = Provider<_RouterRefresh>((Ref ref) {
 final appRouterProvider = Provider<GoRouter>((Ref ref) {
   final refresh = ref.watch(routerRefreshProvider);
   final router = GoRouter(
-    initialLocation: AppRoutes.onboarding,
+    initialLocation: AppRoutes.startup,
     refreshListenable: refresh,
     redirect: (context, state) {
       final flow = ref.read(appFlowProvider);
       final path = state.uri.path;
+      if (flow.isRestoring) {
+        return path == AppRoutes.startup ? null : AppRoutes.startup;
+      }
+      if (path == AppRoutes.startup) {
+        if (flow.isAuthenticated) return AppRoutes.dashboard;
+        return flow.onboardingCompleted
+            ? AppRoutes.login
+            : AppRoutes.onboarding;
+      }
       if (!flow.onboardingCompleted && path != AppRoutes.onboarding) {
         return AppRoutes.onboarding;
       }
@@ -55,6 +66,10 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       return null;
     },
     routes: <RouteBase>[
+      GoRoute(
+        path: AppRoutes.startup,
+        builder: (context, state) => const StartupPage(),
+      ),
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (context, state) => const OnboardingPage(),

@@ -42,7 +42,7 @@ final class LoginController extends Notifier<LoginState> {
       final profiles = List<StudentProfile>.unmodifiable(result.profiles);
       state = LoginState(profiles: profiles);
       if (profiles.length == 1) {
-        ref.read(appFlowProvider.notifier).authenticate(profiles.single);
+        await ref.read(appFlowProvider.notifier).authenticate(profiles.single);
       }
     } on DidupFailure catch (failure) {
       _recordFailure();
@@ -68,9 +68,19 @@ final class LoginController extends Notifier<LoginState> {
     );
   }
 
-  void selectProfile(StudentProfile profile) {
-    ref.read(appFlowProvider.notifier).authenticate(profile);
-    state = LoginState(profiles: state.profiles);
+  Future<void> selectProfile(StudentProfile profile) async {
+    final profiles = state.profiles;
+    state = LoginState(isLoading: true, profiles: profiles);
+    try {
+      await ref.read(appFlowProvider.notifier).authenticate(profile);
+      state = LoginState(profiles: profiles);
+    } on Object {
+      _recordFailure();
+      state = LoginState(
+        profiles: profiles,
+        errorMessage: AppCopy.genericLoginError,
+      );
+    }
   }
 }
 

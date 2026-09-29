@@ -1,5 +1,6 @@
 import '../auth/auth_credentials.dart';
 import '../auth/auth_result.dart';
+import '../auth/student_profile.dart';
 import '../agenda/homework_agenda_item.dart';
 import '../agenda/manual_homework_input.dart';
 import '../agenda/subject_agenda.dart';
@@ -8,6 +9,10 @@ import '../sync/didup_sync.dart';
 
 abstract interface class DidupRepository {
   Future<AuthResult> login(AuthCredentials credentials);
+
+  Future<StudentProfile?> restoreActiveProfile();
+
+  Future<void> rememberActiveProfile(String profileId);
 
   Future<HomeworkBatch> fetchHomework({
     required String profileId,

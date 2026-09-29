@@ -23,6 +23,47 @@ import 'package:image/image.dart' as image;
 import '../support/test_didup_repository.dart';
 
 void main() {
+  testWidgets('ripristina il profilo senza richiedere un nuovo login', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final database = AppDatabase(NativeDatabase.memory());
+    final repository = TestDidupRepository(database: database);
+    addTearDown(database.close);
+    await repository.login(
+      AuthCredentials(
+        schoolCode: 'TEST0000',
+        username: 'utente-test',
+        password: 'solo-per-il-login-iniziale',
+      ),
+    );
+    await repository.rememberActiveProfile('test-profile');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWith((ref) async => database),
+          didupRepositoryProvider.overrideWith((ref) async => repository),
+          reminderServiceProvider.overrideWith(
+            (ref) => _GrantedReminderService(),
+          ),
+        ],
+        child: const DiarioUpApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining(AppCopy.dashboardGreeting), findsOneWidget);
+    expect(find.text(AppCopy.loginTitle), findsNothing);
+    expect(find.text(AppCopy.onboardingTitle), findsNothing);
+    expect(find.text(AppCopy.agenda), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('il rifiuto Argo resta nel login con un errore leggibile', (
     tester,
   ) async {

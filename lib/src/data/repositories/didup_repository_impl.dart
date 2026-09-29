@@ -1,16 +1,19 @@
 import '../../domain/auth/auth_credentials.dart';
 import '../../domain/auth/auth_result.dart';
+import '../../domain/auth/student_profile.dart';
 import '../../domain/agenda/homework_agenda_item.dart';
 import '../../domain/agenda/manual_homework_input.dart';
 import '../../domain/agenda/subject_agenda.dart';
 import '../../domain/homework/homework.dart';
 import '../../domain/diagnostics/diagnostic_event.dart';
+import '../../domain/errors/didup_failure.dart';
 import '../../domain/repositories/didup_repository.dart';
 import '../../domain/sync/didup_sync.dart';
 import '../auth/didup_auth_service.dart';
+import '../auth/session.dart';
 import '../auth/session_store.dart';
 import '../client/didup_client.dart';
-import '../database/app_database.dart';
+import '../database/app_database.dart' hide StudentProfile;
 import '../normalization/homework_normalizer.dart';
 import '../sync/didup_dashboard_source.dart';
 
@@ -49,7 +52,12 @@ final class DidupRepositoryImpl implements DidupRepository {
   @override
   Future<AuthResult> login(AuthCredentials credentials) async {
     final result = await _authService.login(credentials);
-    await _sessionStore.write(result.session);
+    final session = result.profiles.length == 1
+        ? result.session.copyWith(
+            activeProfileId: result.profiles.single.sourceProfileId,
+          )
+        : result.session;
+    await _sessionStore.write(session);
     try {
       await _database.storeProfiles(result.profiles);
     } catch (_) {
@@ -57,6 +65,39 @@ final class DidupRepositoryImpl implements DidupRepository {
       rethrow;
     }
     return AuthResult(profiles: result.profiles);
+  }
+
+  @override
+  Future<StudentProfile?> restoreActiveProfile() async {
+    DidupSession? session;
+    try {
+      session = await _sessionStore.read();
+    } on InvalidPayloadFailure {
+      await _sessionStore.clear();
+      return null;
+    }
+    if (session == null || session.profiles.isEmpty) return null;
+
+    final storedProfile = session.activeProfileId == null
+        ? null
+        : session.profiles[session.activeProfileId];
+    final profile = storedProfile ?? session.profiles.values.first;
+    if (session.activeProfileId != profile.sourceProfileId) {
+      await _sessionStore.write(
+        session.copyWith(activeProfileId: profile.sourceProfileId),
+      );
+    }
+    return _toStudentProfile(profile);
+  }
+
+  @override
+  Future<void> rememberActiveProfile(String profileId) async {
+    final session = await _sessionStore.read();
+    if (session == null || !session.profiles.containsKey(profileId)) {
+      throw const SessionExpiredFailure();
+    }
+    if (session.activeProfileId == profileId) return;
+    await _sessionStore.write(session.copyWith(activeProfileId: profileId));
   }
 
   @override
@@ -204,6 +245,15 @@ final class DidupRepositoryImpl implements DidupRepository {
 
   @override
   Future<void> logout() => _client.logout();
+
+  StudentProfile _toStudentProfile(DidupProfileSession profile) =>
+      StudentProfile(
+        sourceProfileId: profile.sourceProfileId,
+        displayLabel: profile.displayLabel,
+        schoolMinistryCode: profile.schoolMinistryCode,
+        academicYear: profile.academicYear,
+        academicYearStart: profile.academicYearStart,
+      );
 }
 
 DateTime _academicYearStart(DateTime now) {
