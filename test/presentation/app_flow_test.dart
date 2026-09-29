@@ -175,10 +175,20 @@ void main() {
     await tester.tap(find.text(AppCopy.settings));
     await tester.pumpAndSettle();
     expect(find.text(AppCopy.personalization), findsOneWidget);
+    expect(find.text(AppCopy.themeMode), findsOneWidget);
+    expect(find.text(AppCopy.primaryColor), findsOneWidget);
+    expect(find.text(AppCopy.backgroundColor), findsOneWidget);
+    final settingsScroll = find.descendant(
+      of: find.byType(ListView),
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(
+      find.text(AppCopy.profilePhoto),
+      240,
+      scrollable: settingsScroll,
+    );
     expect(find.text(AppCopy.profilePhoto), findsOneWidget);
     expect(find.text(AppCopy.diaryBackground), findsOneWidget);
-    expect(find.text(AppCopy.enableReminders), findsOneWidget);
-    expect(find.text(AppCopy.reminderTime), findsOneWidget);
 
     await tester.ensureVisible(find.text(AppCopy.chooseImage).first);
     await tester.tap(find.text(AppCopy.chooseImage).first);
@@ -194,6 +204,25 @@ void main() {
     await tester.ensureVisible(find.text(AppCopy.chooseImage));
     await tester.tap(find.text(AppCopy.chooseImage));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text(AppCopy.newHomework),
+      240,
+      scrollable: settingsScroll,
+    );
+    expect(find.text(AppCopy.newHomework), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text(AppCopy.enableReminders),
+      240,
+      scrollable: settingsScroll,
+    );
+    expect(find.text(AppCopy.enableReminders), findsOneWidget);
+    expect(find.text(AppCopy.reminderTime), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text(AppCopy.signOut),
+      240,
+      scrollable: settingsScroll,
+    );
+    expect(find.text(AppCopy.signOut), findsOneWidget);
     await tester.tap(find.text(AppCopy.agenda));
     await tester.pumpAndSettle();
     expect(find.byType(Image), findsWidgets);
@@ -251,10 +280,16 @@ final class _MemoryCustomizationRepository
       ProfileImageKind.profile => ProfileCustomization(
         profileImagePath: relativePath,
         diaryBackgroundPath: _value.diaryBackgroundPath,
+        themeMode: _value.themeMode,
+        primaryColorValue: _value.primaryColorValue,
+        backgroundColorValue: _value.backgroundColorValue,
       ),
       ProfileImageKind.diaryBackground => ProfileCustomization(
         profileImagePath: _value.profileImagePath,
         diaryBackgroundPath: relativePath,
+        themeMode: _value.themeMode,
+        primaryColorValue: _value.primaryColorValue,
+        backgroundColorValue: _value.backgroundColorValue,
       ),
     };
     _changes.add(_value);
@@ -265,6 +300,23 @@ final class _MemoryCustomizationRepository
     required String profileId,
     required ProfileImageKind kind,
   }) async {}
+
+  @override
+  Future<void> saveAppearance({
+    required String profileId,
+    required DiaryThemeMode themeMode,
+    required int primaryColorValue,
+    required int backgroundColorValue,
+  }) async {
+    _value = ProfileCustomization(
+      profileImagePath: _value.profileImagePath,
+      diaryBackgroundPath: _value.diaryBackgroundPath,
+      themeMode: themeMode,
+      primaryColorValue: primaryColorValue,
+      backgroundColorValue: backgroundColorValue,
+    );
+    _changes.add(_value);
+  }
 
   Future<void> close() => _changes.close();
 }

@@ -17,11 +17,15 @@ final class SettingsPage extends ConsumerWidget {
   const SettingsPage({
     required this.profileId,
     required this.onSignOut,
+    required this.onCreateHomework,
+    required this.onCreateSubject,
     super.key,
   });
 
   final String? profileId;
   final Future<void> Function() onSignOut;
+  final Future<void> Function() onCreateHomework;
+  final Future<void> Function() onCreateSubject;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,6 +56,11 @@ final class SettingsPage extends ConsumerWidget {
                 ),
               ),
           const SizedBox(height: DiarioUpSpacing.md),
+          _ManualEntryCard(
+            onCreateHomework: onCreateHomework,
+            onCreateSubject: onCreateSubject,
+          ),
+          const SizedBox(height: DiarioUpSpacing.md),
           ref
               .watch(reminderPreferencesProvider(currentProfileId))
               .when(
@@ -65,7 +74,7 @@ final class SettingsPage extends ConsumerWidget {
                 data: (value) => _ReminderSettingsCard(
                   profileId: currentProfileId,
                   preferences: value,
-                  permission: permission.value,
+                  permission: permission.asData?.value,
                 ),
               ),
         ],
@@ -85,10 +94,68 @@ final class SettingsPage extends ConsumerWidget {
           child: ListTile(
             leading: const Icon(Icons.logout_rounded),
             title: const Text(AppCopy.signOut),
-            onTap: onSignOut,
+            subtitle: const Text(AppCopy.signOutBody),
+            onTap: () => _confirmSignOut(context),
           ),
         ),
+        const SizedBox(height: DiarioUpSpacing.xl),
       ],
+    );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(AppCopy.signOutTitle),
+        content: const Text(AppCopy.signOutConfirmation),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(AppCopy.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(AppCopy.signOut),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) await onSignOut();
+  }
+}
+
+final class _ManualEntryCard extends StatelessWidget {
+  const _ManualEntryCard({
+    required this.onCreateHomework,
+    required this.onCreateSubject,
+  });
+
+  final Future<void> Function() onCreateHomework;
+  final Future<void> Function() onCreateSubject;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Column(
+        children: <Widget>[
+          ListTile(
+            leading: const Icon(Icons.add_task_rounded),
+            title: const Text(AppCopy.newHomework),
+            subtitle: const Text(AppCopy.newHomeworkSettingsBody),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: onCreateHomework,
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.library_add_outlined),
+            title: const Text(AppCopy.newSubject),
+            subtitle: const Text(AppCopy.newSubjectSettingsBody),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: onCreateSubject,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -110,6 +177,7 @@ final class _AppearanceSettingsCard extends ConsumerStatefulWidget {
 final class _AppearanceSettingsCardState
     extends ConsumerState<_AppearanceSettingsCard> {
   ProfileImageKind? _savingKind;
+  var _savingAppearance = false;
 
   @override
   Widget build(BuildContext context) {
@@ -129,6 +197,64 @@ final class _AppearanceSettingsCardState
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: DiarioUpSpacing.md),
+            DropdownButtonFormField<DiaryThemeMode>(
+              initialValue: widget.customization.themeMode,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: AppCopy.themeMode,
+                prefixIcon: Icon(Icons.brightness_6_outlined),
+              ),
+              items: const <DropdownMenuItem<DiaryThemeMode>>[
+                DropdownMenuItem(
+                  value: DiaryThemeMode.system,
+                  child: Text(AppCopy.themeSystem),
+                ),
+                DropdownMenuItem(
+                  value: DiaryThemeMode.light,
+                  child: Text(AppCopy.themeLight),
+                ),
+                DropdownMenuItem(
+                  value: DiaryThemeMode.dark,
+                  child: Text(AppCopy.themeDark),
+                ),
+              ],
+              onChanged: _savingAppearance
+                  ? null
+                  : (value) async {
+                      if (value != null) {
+                        await _saveAppearance(themeMode: value);
+                      }
+                    },
+            ),
+            const SizedBox(height: DiarioUpSpacing.md),
+            _ColorPreference(
+              label: AppCopy.primaryColor,
+              colors: DiarioUpThemeChoices.primary,
+              selectedValue:
+                  widget.customization.primaryColorValue ??
+                  DiarioUpColors.indaco.toARGB32(),
+              enabled: !_savingAppearance,
+              onSelected: (value) async {
+                await _saveAppearance(primaryColor: value);
+              },
+            ),
+            const SizedBox(height: DiarioUpSpacing.md),
+            _ColorPreference(
+              label: AppCopy.backgroundColor,
+              colors: DiarioUpThemeChoices.background,
+              selectedValue:
+                  widget.customization.backgroundColorValue ??
+                  DiarioUpColors.sfondo.toARGB32(),
+              enabled: !_savingAppearance,
+              onSelected: (value) async {
+                await _saveAppearance(backgroundColor: value);
+              },
+            ),
+            if (_savingAppearance) ...<Widget>[
+              const SizedBox(height: DiarioUpSpacing.sm),
+              const LinearProgressIndicator(),
+            ],
+            const Divider(height: DiarioUpSpacing.xl),
             _ImagePreferenceTile(
               kind: ProfileImageKind.profile,
               title: AppCopy.profilePhoto,
@@ -150,6 +276,40 @@ final class _AppearanceSettingsCardState
         ),
       ),
     );
+  }
+
+  Future<void> _saveAppearance({
+    DiaryThemeMode? themeMode,
+    int? primaryColor,
+    int? backgroundColor,
+  }) async {
+    setState(() => _savingAppearance = true);
+    try {
+      final repository = await ref.read(
+        profileCustomizationRepositoryProvider.future,
+      );
+      await repository.saveAppearance(
+        profileId: widget.profileId,
+        themeMode: themeMode ?? widget.customization.themeMode,
+        primaryColorValue:
+            primaryColor ??
+            widget.customization.primaryColorValue ??
+            DiarioUpColors.indaco.toARGB32(),
+        backgroundColorValue:
+            backgroundColor ??
+            widget.customization.backgroundColorValue ??
+            DiarioUpColors.sfondo.toARGB32(),
+      );
+      if (mounted) _showMessage(AppCopy.appearanceSaved);
+    } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.personalization,
+        DiagnosticCode.personalizationFailed,
+      );
+      if (mounted) _showMessage(AppCopy.appearanceSaveError);
+    } finally {
+      if (mounted) setState(() => _savingAppearance = false);
+    }
   }
 
   Future<void> _select(ProfileImageKind kind) async {
@@ -203,6 +363,75 @@ final class _AppearanceSettingsCardState
   }
 }
 
+final class _ColorPreference extends StatelessWidget {
+  const _ColorPreference({
+    required this.label,
+    required this.colors,
+    required this.selectedValue,
+    required this.enabled,
+    required this.onSelected,
+  });
+
+  final String label;
+  final List<Color> colors;
+  final int selectedValue;
+  final bool enabled;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(label, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: DiarioUpSpacing.xs),
+        Wrap(
+          spacing: DiarioUpSpacing.sm,
+          runSpacing: DiarioUpSpacing.sm,
+          children: colors
+              .map((color) {
+                final value = color.toARGB32();
+                final selected = value == selectedValue;
+                return Semantics(
+                  button: true,
+                  selected: selected,
+                  label: label,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(DiarioUpSpacing.xl),
+                    onTap: enabled ? () => onSelected(value) : null,
+                    child: AnimatedContainer(
+                      duration: DiarioUpMotion.micro,
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.outline,
+                          width: selected ? 3 : 1,
+                        ),
+                      ),
+                      child: selected
+                          ? Icon(
+                              Icons.check_rounded,
+                              color: color.computeLuminance() > 0.5
+                                  ? DiarioUpColors.inchiostro
+                                  : DiarioUpColors.superficie,
+                            )
+                          : null,
+                    ),
+                  ),
+                );
+              })
+              .toList(growable: false),
+        ),
+      ],
+    );
+  }
+}
+
 final class _ImagePreferenceTile extends ConsumerWidget {
   const _ImagePreferenceTile({
     required this.kind,
@@ -226,7 +455,7 @@ final class _ImagePreferenceTile extends ConsumerWidget {
     final bytes = path == null
         ? const AsyncData<Uint8List?>(null)
         : ref.watch(customizationImageProvider(path));
-    final selectedBytes = bytes.value;
+    final selectedBytes = bytes.asData?.value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[

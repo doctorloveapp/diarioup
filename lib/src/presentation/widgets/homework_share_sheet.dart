@@ -42,123 +42,151 @@ final class _HomeworkShareSheetState extends State<_HomeworkShareSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        DiarioUpSpacing.lg,
-        0,
-        DiarioUpSpacing.lg,
-        DiarioUpSpacing.lg + keyboardInset,
-      ),
+    final primary = theme.colorScheme.primary;
+    return FractionallySizedBox(
+      heightFactor: 0.78,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(AppCopy.shareHomework, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: DiarioUpSpacing.xs),
-          Text(AppCopy.shareHomeworkBody, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: DiarioUpSpacing.lg),
-          DropdownButtonFormField<HomeworkExportScope>(
-            initialValue: _scope,
-            decoration: const InputDecoration(
-              labelText: AppCopy.exportScope,
-              prefixIcon: Icon(Icons.tune_rounded),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: DiarioUpSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  AppCopy.shareHomework,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: DiarioUpSpacing.xs),
+                Text(
+                  AppCopy.shareHomeworkBody,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
             ),
-            isExpanded: true,
-            items: const <DropdownMenuItem<HomeworkExportScope>>[
-              DropdownMenuItem<HomeworkExportScope>(
-                value: HomeworkExportScope.week,
-                child: Text(AppCopy.exportWeek),
-              ),
-              DropdownMenuItem<HomeworkExportScope>(
-                value: HomeworkExportScope.day,
-                child: Text(AppCopy.exportDay),
-              ),
-              DropdownMenuItem<HomeworkExportScope>(
-                value: HomeworkExportScope.subject,
-                child: Text(AppCopy.exportSubject),
-              ),
-            ],
-            onChanged: (scope) {
-              if (scope != null) setState(() => _scope = scope);
-            },
           ),
           const SizedBox(height: DiarioUpSpacing.md),
-          switch (_scope) {
-            HomeworkExportScope.week => _WeekSummary(today: widget.today),
-            HomeworkExportScope.day => ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event_rounded),
-              title: const Text(AppCopy.selectDay),
-              subtitle: Text(
-                MaterialLocalizations.of(
-                  context,
-                ).formatMediumDate(_selectedDay),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DiarioUpSpacing.lg,
               ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: _pickDay,
-            ),
-            HomeworkExportScope.subject => DropdownButtonFormField<String>(
-              initialValue: _selectedSubjectId,
-              decoration: const InputDecoration(
-                labelText: AppCopy.selectSubject,
-                prefixIcon: Icon(Icons.menu_book_rounded),
-              ),
-              isExpanded: true,
-              items: widget.subjects
-                  .map(
-                    (subject) => DropdownMenuItem<String>(
-                      value: subject.id,
-                      child: Text(
-                        subject.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  DropdownButtonFormField<HomeworkExportScope>(
+                    initialValue: _scope,
+                    decoration: const InputDecoration(
+                      labelText: AppCopy.exportScope,
+                      prefixIcon: Icon(Icons.tune_rounded),
+                    ),
+                    isExpanded: true,
+                    items: const <DropdownMenuItem<HomeworkExportScope>>[
+                      DropdownMenuItem<HomeworkExportScope>(
+                        value: HomeworkExportScope.week,
+                        child: Text(AppCopy.exportWeek),
+                      ),
+                      DropdownMenuItem<HomeworkExportScope>(
+                        value: HomeworkExportScope.day,
+                        child: Text(AppCopy.exportDay),
+                      ),
+                      DropdownMenuItem<HomeworkExportScope>(
+                        value: HomeworkExportScope.subject,
+                        child: Text(AppCopy.exportSubject),
+                      ),
+                    ],
+                    onChanged: (scope) {
+                      if (scope != null) setState(() => _scope = scope);
+                    },
+                  ),
+                  const SizedBox(height: DiarioUpSpacing.md),
+                  switch (_scope) {
+                    HomeworkExportScope.week => _WeekSummary(
+                      today: widget.today,
+                    ),
+                    HomeworkExportScope.day => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.event_rounded),
+                      title: const Text(AppCopy.selectDay),
+                      subtitle: Text(
+                        MaterialLocalizations.of(
+                          context,
+                        ).formatMediumDate(_selectedDay),
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: _pickDay,
+                    ),
+                    HomeworkExportScope.subject =>
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedSubjectId,
+                        decoration: const InputDecoration(
+                          labelText: AppCopy.selectSubject,
+                          prefixIcon: Icon(Icons.menu_book_rounded),
+                        ),
+                        isExpanded: true,
+                        items: widget.subjects
+                            .map(
+                              (subject) => DropdownMenuItem<String>(
+                                value: subject.id,
+                                child: Text(
+                                  subject.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(growable: false),
+                        onChanged: (subjectId) {
+                          setState(() => _selectedSubjectId = subjectId);
+                        },
+                      ),
+                  },
+                  const SizedBox(height: DiarioUpSpacing.md),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(DiarioUpSpacing.sm),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(DiarioUpSpacing.sm),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Icon(
+                            Icons.privacy_tip_outlined,
+                            color: primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: DiarioUpSpacing.xs),
+                          const Expanded(child: Text(AppCopy.exportPrivacy)),
+                        ],
                       ),
                     ),
-                  )
-                  .toList(growable: false),
-              onChanged: (subjectId) {
-                setState(() => _selectedSubjectId = subjectId);
-              },
-            ),
-          },
-          const SizedBox(height: DiarioUpSpacing.md),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: DiarioUpColors.indaco.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(DiarioUpSpacing.sm),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(DiarioUpSpacing.sm),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Icon(
-                    Icons.privacy_tip_outlined,
-                    color: DiarioUpColors.indaco,
-                    size: 20,
                   ),
-                  SizedBox(width: DiarioUpSpacing.xs),
-                  Expanded(child: Text(AppCopy.exportPrivacy)),
+                  const SizedBox(height: DiarioUpSpacing.md),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: DiarioUpSpacing.lg),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(AppCopy.cancel),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(top: BorderSide(color: theme.colorScheme.outline)),
+            ),
+            child: SafeArea(
+              top: false,
+              minimum: const EdgeInsets.fromLTRB(
+                DiarioUpSpacing.lg,
+                DiarioUpSpacing.sm,
+                DiarioUpSpacing.lg,
+                DiarioUpSpacing.md,
               ),
-              const SizedBox(width: DiarioUpSpacing.xs),
-              FilledButton.icon(
+              child: FilledButton.icon(
                 onPressed: _canSubmit ? _submit : null,
                 icon: const Icon(Icons.ios_share_rounded),
                 label: const Text(AppCopy.sharePdf),
               ),
-            ],
+            ),
           ),
         ],
       ),

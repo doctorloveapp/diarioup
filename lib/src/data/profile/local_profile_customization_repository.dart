@@ -108,6 +108,19 @@ final class LocalProfileCustomizationRepository
     await _deleteRelativeFile(documents, previousPath);
   }
 
+  @override
+  Future<void> saveAppearance({
+    required String profileId,
+    required DiaryThemeMode themeMode,
+    required int primaryColorValue,
+    required int backgroundColorValue,
+  }) => _database.setProfileAppearance(
+    profileId,
+    themeMode: themeMode,
+    primaryColorValue: primaryColorValue,
+    backgroundColorValue: backgroundColorValue,
+  );
+
   Future<void> _storePath(
     String profileId,
     ProfileImageKind kind,

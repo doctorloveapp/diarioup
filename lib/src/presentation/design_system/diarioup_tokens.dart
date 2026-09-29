@@ -33,6 +33,28 @@ abstract final class DiarioUpSubjectColors {
   }
 }
 
+abstract final class DiarioUpThemeChoices {
+  static const List<Color> primary = <Color>[
+    DiarioUpColors.indaco,
+    DiarioUpColors.verdePetrolio,
+    DiarioUpColors.ambra,
+    DiarioUpColors.inchiostro,
+  ];
+
+  static List<Color> get background => <Color>[
+    DiarioUpColors.sfondo,
+    DiarioUpColors.superficie,
+    Color.alphaBlend(
+      DiarioUpColors.testoSecondario.withValues(alpha: 0.06),
+      DiarioUpColors.sfondo,
+    ),
+    Color.alphaBlend(
+      DiarioUpColors.indaco.withValues(alpha: 0.06),
+      DiarioUpColors.sfondo,
+    ),
+  ];
+}
+
 abstract final class DiarioUpSpacing {
   static const double xxs = 4;
   static const double xs = 8;

@@ -71,6 +71,20 @@ abstract final class AppCopy {
   static const String customizationLoadError =
       'Impossibile leggere la personalizzazione.';
   static const String signOut = 'Disconnetti profilo';
+  static const String signOutBody =
+      'Termina la sessione DidUP su questo dispositivo.';
+  static const String signOutTitle = 'Disconnettere il profilo?';
+  static const String signOutConfirmation =
+      'I dati locali resteranno disponibili finche non scegli Elimina tutto.';
+  static const String themeMode = 'Aspetto dell\'app';
+  static const String themeSystem = 'Come il dispositivo';
+  static const String themeLight = 'Chiaro';
+  static const String themeDark = 'Scuro';
+  static const String primaryColor = 'Colore principale';
+  static const String backgroundColor = 'Colore dello sfondo chiaro';
+  static const String appearanceSaved = 'Aspetto aggiornato';
+  static const String appearanceSaveError =
+      'Impossibile aggiornare l\'aspetto. Riprova.';
   static const String dashboardGreeting = 'Bentornato';
   static const String today = 'Oggi';
   static const String tomorrow = 'Domani';
@@ -102,6 +116,10 @@ abstract final class AppCopy {
   static const String undo = 'Annulla';
   static const String newHomework = 'Nuovo compito';
   static const String newSubject = 'Nuova materia';
+  static const String newHomeworkSettingsBody =
+      'Aggiungi una consegna quando DidUP non e disponibile.';
+  static const String newSubjectSettingsBody =
+      'Crea una materia personale per i compiti manuali.';
   static const String homeworkText = 'Testo del compito';
   static const String subject = 'Materia';
   static const String noSubject = 'Nessuna materia';
@@ -136,7 +154,7 @@ abstract final class AppCopy {
   static const String exportSubject = 'Materia specifica';
   static const String selectDay = 'Scegli giorno';
   static const String selectSubject = 'Scegli materia';
-  static const String sharePdf = 'Condividi PDF';
+  static const String sharePdf = 'Crea e condividi PDF';
   static const String exportPrivacy =
       'I compiti completati e le note personali non saranno inclusi.';
   static const String exportPreparing = 'Preparazione del PDF...';

@@ -4,9 +4,15 @@ import 'package:flutter/services.dart';
 import 'diarioup_tokens.dart';
 
 abstract final class DiarioUpTheme {
-  static ThemeData light() => _build(Brightness.light);
+  static ThemeData light({Color? primaryColor, Color? backgroundColor}) =>
+      _build(
+        Brightness.light,
+        primaryColor: primaryColor,
+        backgroundColor: backgroundColor,
+      );
 
-  static ThemeData dark() => _build(Brightness.dark);
+  static ThemeData dark({Color? primaryColor}) =>
+      _build(Brightness.dark, primaryColor: primaryColor);
 
   static SystemUiOverlayStyle systemUiOverlayStyle(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
@@ -23,11 +29,16 @@ abstract final class DiarioUpTheme {
     );
   }
 
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData _build(
+    Brightness brightness, {
+    Color? primaryColor,
+    Color? backgroundColor,
+  }) {
     final isDark = brightness == Brightness.dark;
+    final primary = primaryColor ?? DiarioUpColors.indaco;
     final background = isDark
         ? DiarioUpColors.inchiostro
-        : DiarioUpColors.sfondo;
+        : backgroundColor ?? DiarioUpColors.sfondo;
     final surface = isDark
         ? DiarioUpColors.superficieScura
         : DiarioUpColors.superficie;
@@ -37,10 +48,10 @@ abstract final class DiarioUpTheme {
     final outline = isDark ? DiarioUpColors.bordoScuro : DiarioUpColors.bordo;
     final scheme =
         ColorScheme.fromSeed(
-          seedColor: DiarioUpColors.indaco,
+          seedColor: primary,
           brightness: brightness,
         ).copyWith(
-          primary: DiarioUpColors.indaco,
+          primary: primary,
           onPrimary: DiarioUpColors.superficie,
           secondary: DiarioUpColors.verdePetrolio,
           tertiary: DiarioUpColors.ambra,
@@ -105,7 +116,7 @@ abstract final class DiarioUpTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(DiarioUpSpacing.sm),
-          borderSide: const BorderSide(color: DiarioUpColors.indaco, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -123,7 +134,7 @@ abstract final class DiarioUpTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface,
-        indicatorColor: DiarioUpColors.indaco.withValues(alpha: 0.16),
+        indicatorColor: primary.withValues(alpha: 0.16),
         labelTextStyle: WidgetStatePropertyAll(baseTextTheme.labelMedium),
       ),
       dividerColor: outline,

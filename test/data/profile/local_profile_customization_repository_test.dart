@@ -56,6 +56,12 @@ void main() {
         'profile-1',
         const ReminderPreferences(enabled: true, hour: 19, minute: 15),
       );
+      await repository.saveAppearance(
+        profileId: 'profile-1',
+        themeMode: DiaryThemeMode.dark,
+        primaryColorValue: 0xFF0F766E,
+        backgroundColorValue: 0xFFF8FAFC,
+      );
       expect(
         (await database.readProfileCustomization('profile-1')).profileImagePath,
         firstPath,
@@ -85,6 +91,9 @@ void main() {
       );
       final restored = await database.readProfileCustomization('profile-1');
       expect(restored.profileImagePath, replacement.profileImagePath);
+      expect(restored.themeMode, DiaryThemeMode.dark);
+      expect(restored.primaryColorValue, 0xFF0F766E);
+      expect(restored.backgroundColorValue, 0xFFF8FAFC);
       expect(
         await repository.loadImage(restored.profileImagePath!),
         isNotEmpty,

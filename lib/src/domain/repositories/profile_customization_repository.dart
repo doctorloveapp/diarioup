@@ -17,4 +17,11 @@ abstract interface class ProfileCustomizationRepository {
     required String profileId,
     required ProfileImageKind kind,
   });
+
+  Future<void> saveAppearance({
+    required String profileId,
+    required DiaryThemeMode themeMode,
+    required int primaryColorValue,
+    required int backgroundColorValue,
+  });
 }

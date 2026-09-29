@@ -1,7 +1,7 @@
 name: diarioup
 description: Agenda Flutter con integrazione locale e isolata verso DidUP.
 publish_to: none
-version: 0.1.0+2
+version: 1.2.0+4
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
@@ -57,7 +57,7 @@ hooks:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/logo_diarioup.png
+  image_path: assets/icons/source/logo_diarioup.png
   min_sdk_android: 28
   remove_alpha_ios: true
 

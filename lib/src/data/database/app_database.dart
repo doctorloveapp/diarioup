@@ -212,6 +212,21 @@ final class AppDatabase extends _$AppDatabase {
     relativePath: relativePath,
   );
 
+  Future<void> setProfileAppearance(
+    String sourceProfileId, {
+    required DiaryThemeMode themeMode,
+    required int primaryColorValue,
+    required int backgroundColorValue,
+  }) => _updateUserPreferences(sourceProfileId, (values) {
+    final byProfile = _objectMap(values['profileCustomization']);
+    final profileValues = _objectMap(byProfile[sourceProfileId]);
+    profileValues['themeMode'] = themeMode.name;
+    profileValues['primaryColorValue'] = primaryColorValue;
+    profileValues['backgroundColorValue'] = backgroundColorValue;
+    byProfile[sourceProfileId] = profileValues;
+    values['profileCustomization'] = byProfile;
+  });
+
   Future<void> _setProfileCustomizationPath(
     String sourceProfileId, {
     required String key,
@@ -901,10 +916,21 @@ ProfileCustomization _profileCustomization(
   final profile = _objectMap(byProfile[sourceProfileId]);
   final profileImagePath = profile['profileImagePath'];
   final diaryBackgroundPath = profile['diaryBackgroundPath'];
+  final themeModeName = profile['themeMode'];
+  final primaryColorValue = profile['primaryColorValue'];
+  final backgroundColorValue = profile['backgroundColorValue'];
   return ProfileCustomization(
     profileImagePath: profileImagePath is String ? profileImagePath : null,
     diaryBackgroundPath: diaryBackgroundPath is String
         ? diaryBackgroundPath
+        : null,
+    themeMode: DiaryThemeMode.values.firstWhere(
+      (value) => value.name == themeModeName,
+      orElse: () => DiaryThemeMode.system,
+    ),
+    primaryColorValue: primaryColorValue is int ? primaryColorValue : null,
+    backgroundColorValue: backgroundColorValue is int
+        ? backgroundColorValue
         : null,
   );
 }

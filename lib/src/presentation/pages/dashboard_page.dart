@@ -62,15 +62,18 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
     final profileId = profile?.sourceProfileId;
     final customization = profileId == null
         ? null
-        : ref.watch(profileCustomizationProvider(profileId)).value;
+        : ref.watch(profileCustomizationProvider(profileId)).asData?.value;
     final profileImagePath = customization?.profileImagePath;
     final backgroundImagePath = customization?.diaryBackgroundPath;
     final profileImage = profileImagePath == null
         ? null
-        : ref.watch(customizationImageProvider(profileImagePath)).value;
+        : ref.watch(customizationImageProvider(profileImagePath)).asData?.value;
     final backgroundImage = backgroundImagePath == null
         ? null
-        : ref.watch(customizationImageProvider(backgroundImagePath)).value;
+        : ref
+              .watch(customizationImageProvider(backgroundImagePath))
+              .asData
+              ?.value;
     if (profileId != null) {
       ref.watch(reminderBootstrapProvider(profileId));
     }
@@ -82,7 +85,16 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
       profileId == null
           ? const SizedBox.shrink()
           : SubjectsPanel(profileId: profileId),
-      SettingsPage(profileId: profileId, onSignOut: _signOut),
+      SettingsPage(
+        profileId: profileId,
+        onSignOut: _signOut,
+        onCreateHomework: () async {
+          if (profileId != null) await _createHomework(profileId);
+        },
+        onCreateSubject: () async {
+          if (profileId != null) await _createSubject(profileId);
+        },
+      ),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -106,12 +118,14 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
           Padding(
             padding: const EdgeInsets.only(right: DiarioUpSpacing.md),
             child: CircleAvatar(
-              backgroundColor: DiarioUpColors.indaco.withValues(alpha: 0.16),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.16),
               child: profileImage == null
                   ? Text(
                       _initial(profile?.displayLabel),
-                      style: const TextStyle(
-                        color: DiarioUpColors.indaco,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w700,
                       ),
                     )
@@ -123,8 +137,8 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
                           errorBuilder: (context, error, stackTrace) => Center(
                             child: Text(
                               _initial(profile?.displayLabel),
-                              style: const TextStyle(
-                                color: DiarioUpColors.indaco,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -140,17 +154,6 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
         imageBytes: backgroundImage,
         child: SafeArea(child: pages[_selectedIndex]),
       ),
-      floatingActionButton: profileId == null || _selectedIndex == 2
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _selectedIndex == 0
-                  ? () => _createHomework(profileId)
-                  : () => _createSubject(profileId),
-              icon: const Icon(Icons.add_rounded),
-              label: Text(
-                _selectedIndex == 0 ? AppCopy.newHomework : AppCopy.newSubject,
-              ),
-            ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
