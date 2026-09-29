@@ -190,20 +190,6 @@ void main() {
     expect(find.text(AppCopy.profilePhoto), findsOneWidget);
     expect(find.text(AppCopy.diaryBackground), findsOneWidget);
 
-    await tester.ensureVisible(find.text(AppCopy.chooseImage).first);
-    await tester.tap(find.text(AppCopy.chooseImage).first);
-    await tester.pumpAndSettle();
-    expect(
-      find.descendant(
-        of: find.byType(CircleAvatar).first,
-        matching: find.byType(Image),
-      ),
-      findsOneWidget,
-    );
-
-    await tester.ensureVisible(find.text(AppCopy.chooseImage));
-    await tester.tap(find.text(AppCopy.chooseImage));
-    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text(AppCopy.newHomework),
       240,

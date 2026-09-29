@@ -41,7 +41,10 @@ final class DiarioUpApp extends ConsumerWidget {
         primaryColor: primary,
         backgroundColor: background,
       ),
-      darkTheme: DiarioUpTheme.dark(primaryColor: primary),
+      darkTheme: DiarioUpTheme.dark(
+        primaryColor: primary,
+        backgroundColor: background,
+      ),
       themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) {

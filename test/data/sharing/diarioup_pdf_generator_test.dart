@@ -5,6 +5,13 @@ import 'package:diarioup/diarioup.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('formatta la scadenza con il giorno della settimana', () {
+    expect(
+      DiarioUpPdfGenerator.formatDueDate(const SchoolDate(2026, 9, 29)),
+      'Martedì 29/09/2026',
+    );
+  });
+
   test('genera un documento PDF valido con logo e testo completo', () async {
     final generator = DiarioUpPdfGenerator(
       logoBytes: await File('assets/logo_diarioup.png').readAsBytes(),

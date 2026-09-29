@@ -42,20 +42,26 @@ final class NativeHomeworkFileSharer implements HomeworkFileSharer {
       path.join(temporaryDirectory.path, 'diarioup_exports'),
     );
     await exportDirectory.create(recursive: true);
-    final temporaryFile = File(
-      path.join(exportDirectory.path, '${_uniqueId()}.pdf'),
+    final safeFileName = _safeFileName(fileName);
+    final shareDirectory = Directory(
+      path.join(exportDirectory.path, _uniqueId()),
     );
+    await shareDirectory.create(recursive: true);
+    final temporaryFile = File(path.join(shareDirectory.path, safeFileName));
     await temporaryFile.writeAsBytes(bytes, flush: true);
 
     try {
       await _nativeShare(
         path: temporaryFile.path,
-        fileName: _safeFileName(fileName),
+        fileName: safeFileName,
         origin: origin,
       );
     } finally {
       if (await temporaryFile.exists()) {
         await temporaryFile.delete();
+      }
+      if (await shareDirectory.exists()) {
+        await shareDirectory.delete();
       }
     }
   }

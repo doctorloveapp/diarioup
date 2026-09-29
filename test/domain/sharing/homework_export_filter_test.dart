@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final monday = const SchoolDate(2026, 9, 28);
 
-  test('esclude sempre i compiti completati prima dell esportazione', () {
+  test('include i compiti completati nell esportazione condivisa', () {
     final homework = <HomeworkAgendaItem>[
       _homework(
         'pending',
@@ -37,12 +37,12 @@ void main() {
       ),
     );
 
-    expect(forWeek.map((item) => item.id), <String>['pending']);
-    expect(forDay.map((item) => item.id), <String>['pending']);
-    expect(forSubject.map((item) => item.id), <String>['pending']);
+    expect(forWeek.map((item) => item.id), <String>['done', 'pending']);
+    expect(forDay.map((item) => item.id), <String>['done', 'pending']);
+    expect(forSubject.map((item) => item.id), <String>['done', 'pending']);
   });
 
-  test('il caso d uso rimuove i completati prima di generare il PDF', () async {
+  test('il caso d uso invia anche i completati al generatore PDF', () async {
     final generator = _CapturingPdfGenerator();
     final sharer = _CapturingFileSharer();
     final useCase = ShareHomework(
@@ -60,10 +60,51 @@ void main() {
       selection: HomeworkExportSelection.week(monday),
     );
 
-    expect(generator.received.map((item) => item.id), <String>['pending']);
+    expect(generator.received.map((item) => item.id), <String>[
+      'done',
+      'pending',
+    ]);
     expect(sharer.callCount, 1);
     expect(result.status, HomeworkShareStatus.shared);
-    expect(result.itemCount, 1);
+    expect(result.itemCount, 2);
+  });
+
+  test('genera nomi descrittivi per settimana, giorno e materia', () async {
+    final sharer = _CapturingFileSharer();
+    final useCase = ShareHomework(
+      repository: _HomeworkRepository(<HomeworkAgendaItem>[
+        _homework(
+          'greek',
+          dueOn: const SchoolDate(2026, 9, 29),
+          subjectId: 'greek',
+        ),
+      ]),
+      pdfGenerator: _CapturingPdfGenerator(),
+      fileSharer: sharer,
+      now: () => DateTime(2026, 9, 28, 18),
+    );
+
+    await useCase(
+      profileId: 'profile-1',
+      selection: HomeworkExportSelection.week(monday),
+    );
+    await useCase(
+      profileId: 'profile-1',
+      selection: HomeworkExportSelection.day(const SchoolDate(2026, 9, 29)),
+    );
+    await useCase(
+      profileId: 'profile-1',
+      selection: HomeworkExportSelection.subject(
+        subjectId: 'greek',
+        subjectName: 'Lingua e cultura greca',
+      ),
+    );
+
+    expect(sharer.fileNames, <String>[
+      'settimana_28_09_2026_a_04_10_2026.pdf',
+      'giorno_29_09_2026.pdf',
+      'materia_lingua_e_cultura_greca_dal_28_09_2026.pdf',
+    ]);
   });
 
   test('la settimana va da lunedi a domenica ed esclude le date assenti', () {
@@ -130,6 +171,7 @@ final class _CapturingPdfGenerator implements HomeworkPdfGenerator {
 
 final class _CapturingFileSharer implements HomeworkFileSharer {
   var callCount = 0;
+  final List<String> fileNames = <String>[];
 
   @override
   Future<void> sharePdf({
@@ -138,6 +180,7 @@ final class _CapturingFileSharer implements HomeworkFileSharer {
     ShareSheetOrigin? origin,
   }) async {
     callCount++;
+    fileNames.add(fileName);
   }
 }
 

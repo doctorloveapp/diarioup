@@ -39,6 +39,12 @@ abstract final class DiarioUpThemeChoices {
     DiarioUpColors.verdePetrolio,
     DiarioUpColors.ambra,
     DiarioUpColors.inchiostro,
+    Color(0xFFB91C1C), // rosso
+    Color(0xFFC2410C), // arancione
+    Color(0xFF854D0E), // giallo
+    Color(0xFF15803D), // verde
+    Color(0xFF1D4ED8), // blu
+    Color(0xFF7E22CE), // violetto
   ];
 
   static List<Color> get background => <Color>[
@@ -52,6 +58,16 @@ abstract final class DiarioUpThemeChoices {
       DiarioUpColors.indaco.withValues(alpha: 0.06),
       DiarioUpColors.sfondo,
     ),
+    const Color(0xFFDBEAFE),
+    const Color(0xFFDCFCE7),
+    const Color(0xFFFEF3C7),
+    const Color(0xFFFCE7F3),
+    const Color(0xFFF3E8FF),
+    const Color(0xFF172554),
+    const Color(0xFF052E16),
+    const Color(0xFF450A0A),
+    const Color(0xFF3B0764),
+    const Color(0xFF0F172A),
   ];
 }
 

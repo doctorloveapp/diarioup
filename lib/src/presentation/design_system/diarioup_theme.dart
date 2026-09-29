@@ -11,8 +11,12 @@ abstract final class DiarioUpTheme {
         backgroundColor: backgroundColor,
       );
 
-  static ThemeData dark({Color? primaryColor}) =>
-      _build(Brightness.dark, primaryColor: primaryColor);
+  static ThemeData dark({Color? primaryColor, Color? backgroundColor}) =>
+      _build(
+        Brightness.dark,
+        primaryColor: primaryColor,
+        backgroundColor: backgroundColor,
+      );
 
   static SystemUiOverlayStyle systemUiOverlayStyle(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
@@ -34,22 +38,40 @@ abstract final class DiarioUpTheme {
     Color? primaryColor,
     Color? backgroundColor,
   }) {
-    final isDark = brightness == Brightness.dark;
     final primary = primaryColor ?? DiarioUpColors.indaco;
-    final background = isDark
-        ? DiarioUpColors.inchiostro
-        : backgroundColor ?? DiarioUpColors.sfondo;
-    final surface = isDark
-        ? DiarioUpColors.superficieScura
+    final requestedDark = brightness == Brightness.dark;
+    final selectedBackground = backgroundColor;
+    final selectedBackgroundIsDark =
+        selectedBackground != null &&
+        selectedBackground.computeLuminance() < 0.35;
+    final effectiveDark = requestedDark || selectedBackgroundIsDark;
+    final effectiveBrightness = effectiveDark
+        ? Brightness.dark
+        : Brightness.light;
+    final background = requestedDark
+        ? selectedBackgroundIsDark
+              ? selectedBackground
+              : DiarioUpColors.inchiostro
+        : selectedBackground ?? DiarioUpColors.sfondo;
+    final surface = effectiveDark
+        ? Color.alphaBlend(
+            DiarioUpColors.superficie.withValues(alpha: 0.08),
+            background,
+          )
         : DiarioUpColors.superficie;
-    final onSurface = isDark
+    final onSurface = effectiveDark
         ? DiarioUpColors.superficie
         : DiarioUpColors.inchiostro;
-    final outline = isDark ? DiarioUpColors.bordoScuro : DiarioUpColors.bordo;
+    final outline = effectiveDark
+        ? Color.alphaBlend(
+            DiarioUpColors.superficie.withValues(alpha: 0.24),
+            background,
+          )
+        : DiarioUpColors.bordo;
     final scheme =
         ColorScheme.fromSeed(
           seedColor: primary,
-          brightness: brightness,
+          brightness: effectiveBrightness,
         ).copyWith(
           primary: primary,
           onPrimary: DiarioUpColors.superficie,
@@ -74,7 +96,7 @@ abstract final class DiarioUpTheme {
 
     return ThemeData(
       useMaterial3: true,
-      brightness: brightness,
+      brightness: effectiveBrightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: background,
       fontFamily: 'Inter',
@@ -87,7 +109,7 @@ abstract final class DiarioUpTheme {
         foregroundColor: onSurface,
         elevation: 0,
         centerTitle: false,
-        systemOverlayStyle: systemUiOverlayStyle(brightness),
+        systemOverlayStyle: systemUiOverlayStyle(effectiveBrightness),
         titleTextStyle: baseTextTheme.titleLarge?.copyWith(color: onSurface),
       ),
       cardTheme: CardThemeData(

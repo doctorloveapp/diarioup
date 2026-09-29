@@ -20,6 +20,7 @@ void main() {
         nativeShare: ({required path, required fileName, origin}) async {
           sharedPath = path;
           sharedName = fileName;
+          expect(File(path).uri.pathSegments.last, 'Compiti_privati.pdf');
           expect(await File(path).readAsBytes(), <int>[1, 2, 3, 4]);
         },
       );

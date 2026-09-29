@@ -5,6 +5,8 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
+Versione corrente: **1.3.0+5**.
+
 ## Installazione dell'APK
 
 Il dispositivo deve usare Android 9 o successivo.
@@ -27,13 +29,16 @@ servizio DidUP. Una nuova installazione parte con il diario vuoto.
 ## Uso e condivisione
 
 Dopo onboarding e accesso, la scheda **Agenda** mostra i compiti per scadenza;
-**Materie** li raggruppa per materia e **Impostazioni** gestisce immagini locali,
-promemoria, privacy ed esportazione dati.
+**Materie** li raggruppa per materia e **Impostazioni** gestisce foto profilo,
+sfondo del diario, colori dell'app, promemoria, privacy ed esportazione dati.
 
 Per condividere i compiti, toccare l'icona **Condividi** nella Dashboard,
-scegliere settimana, giorno o materia e confermare **Condividi PDF**. I compiti
-completati sono esclusi automaticamente. Il PDF viene creato nell'area
-temporanea dell'app e cancellato quando il foglio di condivisione si chiude.
+scegliere settimana, giorno o materia e confermare **Crea e condividi PDF**.
+La condivisione include anche i compiti segnati come completati, perché lo stato
+della checklist è personale; le note personali restano sempre escluse. Il PDF
+mostra il giorno della settimana accanto a ogni scadenza e usa un nome file
+descrittivo basato sulla selezione. Viene creato nell'area temporanea dell'app e
+cancellato quando il foglio di condivisione si chiude.
 
 ## Segnalazione bug
 

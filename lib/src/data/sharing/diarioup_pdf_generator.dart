@@ -33,7 +33,7 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
     final document = pw.Document(
       title: 'Compiti DiarioUp',
       creator: 'DiarioUp',
-      subject: 'Elenco dei compiti da fare',
+      subject: 'Elenco dei compiti',
       theme: pw.ThemeData.withFont(base: _font, bold: _font),
     );
     final selectionLabel = _selectionLabel(selection);
@@ -83,7 +83,7 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
                     _clean(item.text) ?? '',
                     item.dueOn == null
                         ? 'Senza scadenza'
-                        : _formatDate(item.dueOn!),
+                        : formatDueDate(item.dueOn!),
                   ],
                 )
                 .toList(growable: false),
@@ -92,9 +92,9 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
               bottom: pw.BorderSide(color: _border, width: 0.7),
             ),
             columnWidths: const <int, pw.TableColumnWidth>{
-              0: pw.FlexColumnWidth(1.6),
-              1: pw.FlexColumnWidth(4.6),
-              2: pw.FlexColumnWidth(1.5),
+              0: pw.FlexColumnWidth(1.7),
+              1: pw.FlexColumnWidth(4.1),
+              2: pw.FlexColumnWidth(2.2),
             },
             headerAlignment: pw.Alignment.centerLeft,
             cellAlignment: pw.Alignment.topLeft,
@@ -163,7 +163,7 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
                 ),
                 pw.SizedBox(height: 2),
                 pw.Text(
-                  'Compiti da fare - $selectionLabel',
+                  'Compiti - $selectionLabel',
                   style: pw.TextStyle(color: _secondary, fontSize: 9),
                 ),
               ],
@@ -215,6 +215,22 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
 
   String _formatDate(SchoolDate date) =>
       '${_twoDigits(date.day)}/${_twoDigits(date.month)}/${date.year}';
+
+  static String formatDueDate(SchoolDate date) {
+    const weekdays = <String>[
+      'Lunedì',
+      'Martedì',
+      'Mercoledì',
+      'Giovedì',
+      'Venerdì',
+      'Sabato',
+      'Domenica',
+    ];
+    final weekday = weekdays[date.toLocalDate().weekday - 1];
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '$weekday ${twoDigits(date.day)}/'
+        '${twoDigits(date.month)}/${date.year}';
+  }
 
   String _formatDateTimeDate(DateTime date) =>
       '${_twoDigits(date.day)}/${_twoDigits(date.month)}/${date.year}';

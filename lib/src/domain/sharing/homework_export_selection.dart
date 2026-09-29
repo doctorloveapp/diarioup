@@ -43,13 +43,12 @@ abstract final class HomeworkExportFilter {
     required Iterable<HomeworkAgendaItem> homework,
     required HomeworkExportSelection selection,
   }) {
-    final pending = homework.where((item) => !item.isDone);
     final filtered = switch (selection.scope) {
-      HomeworkExportScope.week => _forWeek(pending, selection.anchorDate!),
-      HomeworkExportScope.day => pending.where(
+      HomeworkExportScope.week => _forWeek(homework, selection.anchorDate!),
+      HomeworkExportScope.day => homework.where(
         (item) => item.dueOn == selection.anchorDate,
       ),
-      HomeworkExportScope.subject => pending.where(
+      HomeworkExportScope.subject => homework.where(
         (item) => item.subjectId == selection.subjectId,
       ),
     };

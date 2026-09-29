@@ -58,6 +58,18 @@ Questi valori sono la fonte di verità visiva del prodotto. Non introdurre color
 | `testoSecondario` | `#475569` | Informazioni secondarie e descrizioni |
 | `bordo` | `#CBD5E1` | Divisori e bordi a basso contrasto |
 
+Palette di personalizzazione approvata:
+
+- Colori principali arcobaleno: rosso `#B91C1C`, arancione `#C2410C`,
+  giallo `#854D0E`, verde `#15803D`, blu `#1D4ED8`, indaco `#4F46E5` e
+  violetto `#7E22CE`.
+- Sfondi colorati chiari: `#DBEAFE`, `#DCFCE7`, `#FEF3C7`, `#FCE7F3` e
+  `#F3E8FF`.
+- Sfondi colorati scuri: `#172554`, `#052E16`, `#450A0A`, `#3B0764` e
+  `#0F172A`.
+- Quando uno sfondo personalizzato è scuro, tema, superfici e testo devono
+  adattare automaticamente il contrasto mantenendo almeno WCAG AA.
+
 I colori devono essere esposti tramite Theme/Design Tokens, non copiati come literal nei widget. Garantire contrasto WCAG AA per testo e controlli interattivi; non usare il solo colore per comunicare uno stato.
 
 ### Tipografia

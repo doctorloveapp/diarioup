@@ -81,7 +81,7 @@ abstract final class AppCopy {
   static const String themeLight = 'Chiaro';
   static const String themeDark = 'Scuro';
   static const String primaryColor = 'Colore principale';
-  static const String backgroundColor = 'Colore dello sfondo chiaro';
+  static const String backgroundColor = 'Colore dello sfondo';
   static const String appearanceSaved = 'Aspetto aggiornato';
   static const String appearanceSaveError =
       'Impossibile aggiornare l\'aspetto. Riprova.';
@@ -155,11 +155,9 @@ abstract final class AppCopy {
   static const String selectDay = 'Scegli giorno';
   static const String selectSubject = 'Scegli materia';
   static const String sharePdf = 'Crea e condividi PDF';
-  static const String exportPrivacy =
-      'I compiti completati e le note personali non saranno inclusi.';
+  static const String exportPrivacy = 'Le note personali non saranno incluse.';
   static const String exportPreparing = 'Preparazione del PDF...';
-  static const String exportEmpty =
-      'Nessun compito da fare per la selezione scelta.';
+  static const String exportEmpty = 'Nessun compito per la selezione scelta.';
   static const String exportError =
       'Impossibile creare o condividere il PDF. Riprova.';
   static const String exportDone = 'PDF condiviso';

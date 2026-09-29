@@ -322,8 +322,8 @@ final class _DashboardBackground extends StatelessWidget {
     final bytes = imageBytes;
     if (bytes == null) return child;
     final overlayOpacity = Theme.of(context).brightness == Brightness.dark
-        ? 0.90
-        : 0.84;
+        ? 0.70
+        : 0.64;
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
