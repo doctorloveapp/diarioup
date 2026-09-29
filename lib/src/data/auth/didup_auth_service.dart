@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
 import '../../domain/auth/auth_credentials.dart';
+import '../../domain/auth/student_gender.dart';
 import '../../domain/auth/student_profile.dart';
 import '../../domain/errors/didup_failure.dart';
 import '../network/didup_network_client.dart';
@@ -72,6 +73,7 @@ final class DioDidupAuthService implements DidupAuthService {
           schoolMinistryCode: _requiredString(loginContext, 'codMin'),
           notificationOptions: _parseOptions(loginContext['opzioni']),
           displayLabel: profile.displayLabel,
+          gender: profile.gender,
           academicYear: profile.academicYear,
           academicYearStart: profile.academicYearStart,
         );
@@ -317,10 +319,23 @@ final class DioDidupAuthService implements DidupAuthService {
     return StudentProfile(
       sourceProfileId: _requiredString(sheet, 'pk'),
       displayLabel: _optionalString(student['nominativo']) ?? '',
+      gender: _parseGender(student),
       schoolMinistryCode: schoolMinistryCode,
       academicYear: _optionalString(year['anno']),
       academicYearStart: _optionalDate(year['dataInizio']),
     );
+  }
+
+  StudentGender _parseGender(Map<String, Object?> student) {
+    final raw =
+        _optionalString(student['sesso']) ??
+        _optionalString(student['genere']) ??
+        _optionalString(student['gender']);
+    return switch (raw?.trim().toUpperCase()) {
+      'F' || 'FEMALE' || 'FEMMINA' => StudentGender.female,
+      'M' || 'MALE' || 'MASCHIO' => StudentGender.male,
+      _ => StudentGender.unknown,
+    };
   }
 
   Map<String, bool> _parseOptions(Object? value) {

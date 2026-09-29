@@ -250,6 +250,7 @@ final class DidupRepositoryImpl implements DidupRepository {
       StudentProfile(
         sourceProfileId: profile.sourceProfileId,
         displayLabel: profile.displayLabel,
+        gender: profile.gender,
         schoolMinistryCode: profile.schoolMinistryCode,
         academicYear: profile.academicYear,
         academicYearStart: profile.academicYearStart,

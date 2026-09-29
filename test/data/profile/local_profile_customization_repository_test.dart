@@ -62,6 +62,7 @@ void main() {
         primaryColorValue: 0xFF0F766E,
         backgroundColorValue: 0xFFF8FAFC,
       );
+      await repository.saveCheckUpdates(profileId: 'profile-1', enabled: false);
       expect(
         (await database.readProfileCustomization('profile-1')).profileImagePath,
         firstPath,
@@ -94,6 +95,7 @@ void main() {
       expect(restored.themeMode, DiaryThemeMode.dark);
       expect(restored.primaryColorValue, 0xFF0F766E);
       expect(restored.backgroundColorValue, 0xFFF8FAFC);
+      expect(restored.checkUpdates, isFalse);
       expect(
         await repository.loadImage(restored.profileImagePath!),
         isNotEmpty,
@@ -151,6 +153,27 @@ void main() {
         repository.loadImage('../outside.jpg'),
         throwsArgumentError,
       );
+    },
+  );
+
+  test(
+    'il controllo aggiornamenti è attivo per impostazione predefinita',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      await database.storeProfiles(const <StudentProfile>[
+        StudentProfile(
+          sourceProfileId: 'profile-default',
+          displayLabel: 'Profilo test',
+          schoolMinistryCode: 'TEST0001',
+          academicYear: '2026/2027',
+        ),
+      ]);
+
+      final customization = await database.readProfileCustomization(
+        'profile-default',
+      );
+      expect(customization.checkUpdates, isTrue);
     },
   );
 }

@@ -5,7 +5,7 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.3.1+6**.
+Versione corrente: **1.4.3+10**.
 
 ## Installazione dell'APK
 
@@ -30,9 +30,20 @@ salvata e non deve essere reinserita a ogni apertura.
 
 ## Uso e condivisione
 
-Dopo onboarding e accesso, la scheda **Agenda** mostra i compiti per scadenza;
-**Materie** li raggruppa per materia e **Impostazioni** gestisce foto profilo,
-sfondo del diario, colori dell'app, promemoria, privacy ed esportazione dati.
+Dopo onboarding e accesso, la scheda **Diario** mostra i compiti per scadenza;
+**Materie** li raggruppa per materia, **Orario** mostra la settimana scolastica
+e **Impostazioni** gestisce foto profilo, sfondo del diario, colori dell'app,
+promemoria, aggiornamenti, privacy ed esportazione dati.
+
+Nella scheda **Orario**, toccare una lezione per associarle la materia e un
+colore. Il selettore in alto alterna i nomi dei professori e delle materie; le
+modifiche restano disponibili offline nel database cifrato. Il pulsante **X**
+torna rapidamente al Diario.
+
+Il controllo aggiornamenti è attivo per impostazione predefinita e consulta in
+background soltanto la release pubblica più recente su GitHub. Se esiste una
+versione successiva, DiarioUp propone il link ufficiale senza bloccare l'avvio.
+Il controllo può essere disattivato in **Impostazioni**.
 
 Per condividere i compiti, toccare l'icona **Condividi** nella Dashboard,
 scegliere settimana, giorno o materia e confermare **Crea e condividi PDF**.

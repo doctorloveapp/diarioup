@@ -58,6 +58,7 @@ final class SubjectsPanel extends ConsumerWidget {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 3),
           content: const Text(AppCopy.homeworkCompleted),
           action: SnackBarAction(
             label: AppCopy.undo,

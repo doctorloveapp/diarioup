@@ -121,6 +121,7 @@ final class _HomeworkDetailPageState extends ConsumerState<HomeworkDetailPage> {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 3),
           content: const Text(AppCopy.homeworkCompleted),
           action: SnackBarAction(
             label: AppCopy.undo,

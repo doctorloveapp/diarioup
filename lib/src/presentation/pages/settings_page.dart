@@ -19,6 +19,7 @@ final class SettingsPage extends ConsumerWidget {
     required this.onSignOut,
     required this.onCreateHomework,
     required this.onCreateSubject,
+    this.profilePhotoKey,
     super.key,
   });
 
@@ -26,6 +27,7 @@ final class SettingsPage extends ConsumerWidget {
   final Future<void> Function() onSignOut;
   final Future<void> Function() onCreateHomework;
   final Future<void> Function() onCreateSubject;
+  final Key? profilePhotoKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,9 +52,19 @@ final class SettingsPage extends ConsumerWidget {
                     profileCustomizationProvider(currentProfileId),
                   ),
                 ),
-                data: (value) => _AppearanceSettingsCard(
-                  profileId: currentProfileId,
-                  customization: value,
+                data: (value) => Column(
+                  children: <Widget>[
+                    _AppearanceSettingsCard(
+                      profileId: currentProfileId,
+                      customization: value,
+                      profilePhotoKey: profilePhotoKey,
+                    ),
+                    const SizedBox(height: DiarioUpSpacing.md),
+                    _UpdateSettingsCard(
+                      profileId: currentProfileId,
+                      enabled: value.checkUpdates,
+                    ),
+                  ],
                 ),
               ),
           const SizedBox(height: DiarioUpSpacing.md),
@@ -74,7 +86,7 @@ final class SettingsPage extends ConsumerWidget {
                 data: (value) => _ReminderSettingsCard(
                   profileId: currentProfileId,
                   preferences: value,
-                  permission: permission.asData?.value,
+                  permission: permission,
                 ),
               ),
         ],
@@ -125,6 +137,60 @@ final class SettingsPage extends ConsumerWidget {
   }
 }
 
+final class _UpdateSettingsCard extends ConsumerStatefulWidget {
+  const _UpdateSettingsCard({required this.profileId, required this.enabled});
+
+  final String profileId;
+  final bool enabled;
+
+  @override
+  ConsumerState<_UpdateSettingsCard> createState() =>
+      _UpdateSettingsCardState();
+}
+
+final class _UpdateSettingsCardState
+    extends ConsumerState<_UpdateSettingsCard> {
+  var _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: SwitchListTile(
+        secondary: const Icon(Icons.system_update_alt_rounded),
+        title: const Text(AppCopy.checkUpdates),
+        subtitle: const Text(AppCopy.checkUpdatesBody),
+        value: widget.enabled,
+        onChanged: _saving ? null : _save,
+      ),
+    );
+  }
+
+  Future<void> _save(bool enabled) async {
+    setState(() => _saving = true);
+    try {
+      final repository = await ref.read(
+        profileCustomizationRepositoryProvider.future,
+      );
+      await repository.saveCheckUpdates(
+        profileId: widget.profileId,
+        enabled: enabled,
+      );
+    } on Object {
+      ref.read(diagnosticRecorderProvider)(
+        DiagnosticArea.personalization,
+        DiagnosticCode.personalizationFailed,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppCopy.appearanceSaveError)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+}
+
 final class _ManualEntryCard extends StatelessWidget {
   const _ManualEntryCard({
     required this.onCreateHomework,
@@ -164,10 +230,12 @@ final class _AppearanceSettingsCard extends ConsumerStatefulWidget {
   const _AppearanceSettingsCard({
     required this.profileId,
     required this.customization,
+    required this.profilePhotoKey,
   });
 
   final String profileId;
   final ProfileCustomization customization;
+  final Key? profilePhotoKey;
 
   @override
   ConsumerState<_AppearanceSettingsCard> createState() =>
@@ -255,13 +323,16 @@ final class _AppearanceSettingsCardState
               const LinearProgressIndicator(),
             ],
             const Divider(height: DiarioUpSpacing.xl),
-            _ImagePreferenceTile(
-              kind: ProfileImageKind.profile,
-              title: AppCopy.profilePhoto,
-              relativePath: widget.customization.profileImagePath,
-              isSaving: _savingKind == ProfileImageKind.profile,
-              onSelect: () => _select(ProfileImageKind.profile),
-              onRemove: () => _remove(ProfileImageKind.profile),
+            KeyedSubtree(
+              key: widget.profilePhotoKey,
+              child: _ImagePreferenceTile(
+                kind: ProfileImageKind.profile,
+                title: AppCopy.profilePhoto,
+                relativePath: widget.customization.profileImagePath,
+                isSaving: _savingKind == ProfileImageKind.profile,
+                onSelect: () => _select(ProfileImageKind.profile),
+                onRemove: () => _remove(ProfileImageKind.profile),
+              ),
             ),
             const Divider(height: DiarioUpSpacing.lg),
             _ImagePreferenceTile(
@@ -604,11 +675,12 @@ final class _ReminderSettingsCard extends ConsumerWidget {
 
   final String profileId;
   final ReminderPreferences preferences;
-  final ReminderPermissionStatus? permission;
+  final AsyncValue<ReminderPermissionStatus> permission;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final time = TimeOfDay(hour: preferences.hour, minute: preferences.minute);
+    final permissionStatus = permission.asData?.value;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(DiarioUpSpacing.xs),
@@ -636,17 +708,12 @@ final class _ReminderSettingsCard extends ConsumerWidget {
             ),
             ListTile(
               leading: Icon(
-                permission == ReminderPermissionStatus.granted
+                permissionStatus == ReminderPermissionStatus.granted
                     ? Icons.verified_outlined
                     : Icons.info_outline_rounded,
               ),
               title: Text(_permissionLabel(permission)),
-              trailing: permission == ReminderPermissionStatus.denied
-                  ? TextButton(
-                      onPressed: () => _openSettings(ref),
-                      child: const Text(AppCopy.openNotificationSettings),
-                    )
-                  : null,
+              trailing: _permissionAction(ref, permissionStatus),
             ),
           ],
         ),
@@ -728,8 +795,33 @@ final class _ReminderSettingsCard extends ConsumerWidget {
     ref.invalidate(reminderPermissionProvider);
   }
 
-  String _permissionLabel(ReminderPermissionStatus? status) {
-    return switch (status) {
+  Widget? _permissionAction(WidgetRef ref, ReminderPermissionStatus? status) {
+    if (permission.isLoading) {
+      return const SizedBox.square(
+        dimension: DiarioUpSpacing.lg,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    if (permission.hasError) {
+      return IconButton(
+        tooltip: AppCopy.retry,
+        onPressed: () => ref.invalidate(reminderPermissionProvider),
+        icon: const Icon(Icons.refresh_rounded),
+      );
+    }
+    if (status == ReminderPermissionStatus.denied) {
+      return TextButton(
+        onPressed: () => _openSettings(ref),
+        child: const Text(AppCopy.openNotificationSettings),
+      );
+    }
+    return null;
+  }
+
+  String _permissionLabel(AsyncValue<ReminderPermissionStatus> value) {
+    if (value.isLoading) return AppCopy.reminderPermissionChecking;
+    if (value.hasError) return AppCopy.reminderPermissionCheckFailed;
+    return switch (value.value) {
       ReminderPermissionStatus.granted => AppCopy.reminderPermissionGranted,
       ReminderPermissionStatus.denied => AppCopy.reminderPermissionDenied,
       ReminderPermissionStatus.unavailable =>

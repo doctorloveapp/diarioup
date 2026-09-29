@@ -14,6 +14,7 @@ import '../../domain/profile/profile_customization.dart';
 import '../../domain/reminders/reminder_plan.dart';
 import '../../domain/reminders/reminder_preferences.dart';
 import '../../domain/sync/didup_sync.dart';
+import '../../domain/timetable/timetable_entry.dart' as domain;
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -32,6 +33,7 @@ part 'app_database.g.dart';
     SyncStates,
     HomeworkIdentityMappings,
     DiagnosticEntries,
+    SchoolTimetableEntries,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -40,7 +42,7 @@ final class AppDatabase extends _$AppDatabase {
   final Uuid _uuid;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -52,7 +54,11 @@ final class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         await migrator.createTable(diagnosticEntries);
       }
-      if (to > 3) {
+      if (from < 4) {
+        await migrator.createTable(schoolTimetableEntries);
+        await migrator.createIndex(timetableByProfileDayPeriod);
+      }
+      if (to > 4) {
         throw StateError('Migrazione database non definita: $from -> $to');
       }
     },
@@ -226,6 +232,104 @@ final class AppDatabase extends _$AppDatabase {
     byProfile[sourceProfileId] = profileValues;
     values['profileCustomization'] = byProfile;
   });
+
+  Future<void> setCheckUpdates(
+    String sourceProfileId, {
+    required bool enabled,
+  }) => _updateUserPreferences(sourceProfileId, (values) {
+    final byProfile = _objectMap(values['profileCustomization']);
+    final profileValues = _objectMap(byProfile[sourceProfileId]);
+    profileValues['checkUpdates'] = enabled;
+    byProfile[sourceProfileId] = profileValues;
+    values['profileCustomization'] = byProfile;
+  });
+
+  Future<void> seedTimetableIfEmpty(
+    String sourceProfileId,
+    List<domain.TimetableEntry> entries,
+  ) async {
+    final profile = await _profileBySourceId(sourceProfileId);
+    if (profile == null) throw StateError('Profilo locale non inizializzato.');
+    await transaction(() async {
+      final existing = await (select(
+        schoolTimetableEntries,
+      )..where((table) => table.profileId.equals(profile.id))).get();
+      if (existing.isNotEmpty) return;
+      for (final entry in entries) {
+        await into(schoolTimetableEntries).insert(
+          SchoolTimetableEntriesCompanion.insert(
+            id: '${profile.id}:${entry.id}',
+            profileId: profile.id,
+            weekday: entry.weekday.isoValue,
+            period: entry.period,
+            professorName: entry.professorName,
+            subjectName: Value<String?>(entry.subjectName),
+            subjectColorValue: Value<int?>(entry.subjectColorValue),
+            updatedAt: entry.updatedAt.toUtc(),
+          ),
+        );
+      }
+    });
+  }
+
+  Stream<List<domain.TimetableEntry>> watchTimetable(
+    String sourceProfileId,
+  ) async* {
+    final profile = await _profileBySourceId(sourceProfileId);
+    if (profile == null) {
+      yield const <domain.TimetableEntry>[];
+      return;
+    }
+    final query = select(schoolTimetableEntries)
+      ..where((table) => table.profileId.equals(profile.id))
+      ..orderBy(<OrderingTerm Function($SchoolTimetableEntriesTable)>[
+        (table) => OrderingTerm.asc(table.period),
+        (table) => OrderingTerm.asc(table.weekday),
+      ]);
+    yield* query.watch().map(
+      (rows) => rows
+          .map(
+            (row) => domain.TimetableEntry(
+              id: row.id,
+              profileId: sourceProfileId,
+              weekday: domain.SchoolWeekday.fromIsoValue(row.weekday),
+              period: row.period,
+              professorName: row.professorName,
+              subjectName: row.subjectName,
+              subjectColorValue: row.subjectColorValue,
+              updatedAt: row.updatedAt.toUtc(),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  Future<void> updateTimetableCell({
+    required String sourceProfileId,
+    required String entryId,
+    required String subjectName,
+    required int subjectColorValue,
+  }) async {
+    final normalizedSubject = subjectName.trim();
+    if (normalizedSubject.isEmpty) {
+      throw ArgumentError.value(subjectName, 'subjectName');
+    }
+    final profile = await _profileBySourceId(sourceProfileId);
+    if (profile == null) throw StateError('Profilo locale non inizializzato.');
+    final changed =
+        await (update(schoolTimetableEntries)..where(
+              (table) =>
+                  table.id.equals(entryId) & table.profileId.equals(profile.id),
+            ))
+            .write(
+              SchoolTimetableEntriesCompanion(
+                subjectName: Value<String?>(normalizedSubject),
+                subjectColorValue: Value<int?>(subjectColorValue),
+                updatedAt: Value<DateTime>(DateTime.now().toUtc()),
+              ),
+            );
+    if (changed != 1) throw StateError('Cella orario non disponibile.');
+  }
 
   Future<void> _setProfileCustomizationPath(
     String sourceProfileId, {
@@ -919,6 +1023,7 @@ ProfileCustomization _profileCustomization(
   final themeModeName = profile['themeMode'];
   final primaryColorValue = profile['primaryColorValue'];
   final backgroundColorValue = profile['backgroundColorValue'];
+  final checkUpdates = profile['checkUpdates'];
   return ProfileCustomization(
     profileImagePath: profileImagePath is String ? profileImagePath : null,
     diaryBackgroundPath: diaryBackgroundPath is String
@@ -932,6 +1037,7 @@ ProfileCustomization _profileCustomization(
     backgroundColorValue: backgroundColorValue is int
         ? backgroundColorValue
         : null,
+    checkUpdates: checkUpdates is bool ? checkUpdates : true,
   );
 }
 

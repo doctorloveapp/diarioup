@@ -35,6 +35,7 @@ abstract final class DiarioUpSubjectColors {
 
 abstract final class DiarioUpThemeChoices {
   static const List<Color> primary = <Color>[
+    DiarioUpColors.superficie,
     DiarioUpColors.indaco,
     DiarioUpColors.verdePetrolio,
     DiarioUpColors.ambra,

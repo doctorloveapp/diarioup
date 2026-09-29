@@ -27,9 +27,41 @@ abstract final class AppCopy {
       'Questo accesso contiene più studenti. Seleziona quello da usare.';
   static const String agenda = 'Diario';
   static const String subjects = 'Materie';
+  static const String timetable = 'Orario';
+  static const String timetableHour = 'Ora';
   static const String settings = 'Impostazioni';
+  static const String checkUpdates = 'Controlla aggiornamenti';
+  static const String checkUpdatesBody =
+      'Verifica in background se è disponibile una nuova versione.';
+  static const String updateAvailable = 'Aggiornamento disponibile';
+  static const String updateAvailableBody =
+      'È disponibile DiarioUp versione {version}.';
+  static const String downloadUpdate = 'Apri la release';
+  static const String updateLinkError =
+      'Impossibile aprire la pagina della release.';
+  static const String professorView = 'Professori';
+  static const String subjectView = 'Materie';
+  static const String editTimetableCell = 'Configura lezione';
+  static const String professor = 'Professore';
+  static const String timetableSubjectHint = 'Es. Matematica';
+  static const String timetableEmptySubject = 'Da assegnare';
+  static const String timetableSaved = 'Lezione aggiornata';
+  static const String timetableSaveError =
+      'Impossibile aggiornare la lezione. Riprova.';
+  static const String timetableLoadError =
+      'Impossibile leggere l’orario locale.';
+  static const String closeTimetable = 'Chiudi orario';
+  static const String monday = 'Lunedì';
+  static const String tuesday = 'Martedì';
+  static const String wednesday = 'Mercoledì';
+  static const String thursday = 'Giovedì';
+  static const String friday = 'Venerdì';
   static const String infoPrivacy = 'Info & Privacy';
   static const String appVersion = 'Versione app';
+  static const String sourceRepository = 'Repository DiarioUp';
+  static const String sourceRepositoryBody =
+      'Apri il progetto e le release ufficiali su GitHub.';
+  static const String repositoryLinkError = 'Impossibile aprire il repository.';
   static const String privacyNotice = 'Informativa privacy';
   static const String privacyNoticeBody =
       'Leggi come DiarioUp tratta e protegge i dati sul dispositivo.';
@@ -87,6 +119,8 @@ abstract final class AppCopy {
   static const String appearanceSaveError =
       'Impossibile aggiornare l\'aspetto. Riprova.';
   static const String dashboardGreeting = 'Bentornato';
+  static const String dashboardGreetingFemale = 'Bentornata';
+  static const String openProfilePhotoSettings = 'Modifica foto profilo';
   static const String today = 'Oggi';
   static const String tomorrow = 'Domani';
   static const String nextDays = 'Prossimi giorni';
@@ -180,6 +214,10 @@ abstract final class AppCopy {
   static const String reminderPermissionDenied = 'Permesso non concesso';
   static const String reminderPermissionUnavailable =
       'Promemoria non disponibili';
+  static const String reminderPermissionChecking =
+      'Verifica del permesso in corso...';
+  static const String reminderPermissionCheckFailed =
+      'Impossibile verificare il permesso';
   static const String openNotificationSettings = 'Apri impostazioni';
   static const String reminderPermissionRequired =
       'Per attivare i promemoria, consenti le notifiche nelle impostazioni.';

@@ -207,3 +207,22 @@ class DiagnosticEntries extends Table {
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
+
+@TableIndex(
+  name: 'timetable_by_profile_day_period',
+  columns: {#profileId, #weekday, #period},
+  unique: true,
+)
+class SchoolTimetableEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get profileId => text().references(StudentProfiles, #id)();
+  IntColumn get weekday => integer()();
+  IntColumn get period => integer()();
+  TextColumn get professorName => text()();
+  TextColumn get subjectName => text().nullable()();
+  IntColumn get subjectColorValue => integer().nullable()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}

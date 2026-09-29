@@ -95,7 +95,10 @@ void main() {
             'success': true,
             'data': <String, Object?>{
               'scheda': <String, Object?>{'pk': 'profile-$suffix'},
-              'alunno': <String, Object?>{'nominativo': 'Profilo $suffix'},
+              'alunno': <String, Object?>{
+                'nominativo': suffix == '1' ? 'ROSSI GIULIA' : 'Profilo 2',
+                'sesso': suffix == '1' ? 'F' : 'M',
+              },
               'anno': <String, Object?>{
                 'anno': '2026/2027',
                 'dataInizio': '2026-09-01T00:00:00Z',
@@ -134,6 +137,8 @@ void main() {
 
       expect(result.profiles, hasLength(2));
       expect(result.requiresProfileSelection, isTrue);
+      expect(result.profiles.first.gender, StudentGender.female);
+      expect(result.profiles.last.gender, StudentGender.male);
       expect(store.writeCount, 1);
       final encoded = const SessionCodec().encode(store.value!);
       expect(encoded, isNot(contains(password)));
@@ -147,6 +152,7 @@ void main() {
       expect(store.writeCount, 2);
       expect(store.value!.activeProfileId, selectedProfile.sourceProfileId);
       expect(restoredProfile!.sourceProfileId, selectedProfile.sourceProfileId);
+      expect(restoredProfile.gender, StudentGender.male);
     },
   );
 

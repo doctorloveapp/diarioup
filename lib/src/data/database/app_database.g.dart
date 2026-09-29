@@ -5911,6 +5911,540 @@ class DiagnosticEntriesCompanion extends UpdateCompanion<DiagnosticEntry> {
   }
 }
 
+class $SchoolTimetableEntriesTable extends SchoolTimetableEntries
+    with TableInfo<$SchoolTimetableEntriesTable, SchoolTimetableEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SchoolTimetableEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _profileIdMeta = const VerificationMeta(
+    'profileId',
+  );
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+    'profile_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES student_profiles (id)',
+    ),
+  );
+  static const VerificationMeta _weekdayMeta = const VerificationMeta(
+    'weekday',
+  );
+  @override
+  late final GeneratedColumn<int> weekday = GeneratedColumn<int>(
+    'weekday',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _periodMeta = const VerificationMeta('period');
+  @override
+  late final GeneratedColumn<int> period = GeneratedColumn<int>(
+    'period',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _professorNameMeta = const VerificationMeta(
+    'professorName',
+  );
+  @override
+  late final GeneratedColumn<String> professorName = GeneratedColumn<String>(
+    'professor_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _subjectNameMeta = const VerificationMeta(
+    'subjectName',
+  );
+  @override
+  late final GeneratedColumn<String> subjectName = GeneratedColumn<String>(
+    'subject_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _subjectColorValueMeta = const VerificationMeta(
+    'subjectColorValue',
+  );
+  @override
+  late final GeneratedColumn<int> subjectColorValue = GeneratedColumn<int>(
+    'subject_color_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    profileId,
+    weekday,
+    period,
+    professorName,
+    subjectName,
+    subjectColorValue,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'school_timetable_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SchoolTimetableEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(
+        _profileIdMeta,
+        profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('weekday')) {
+      context.handle(
+        _weekdayMeta,
+        weekday.isAcceptableOrUnknown(data['weekday']!, _weekdayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_weekdayMeta);
+    }
+    if (data.containsKey('period')) {
+      context.handle(
+        _periodMeta,
+        period.isAcceptableOrUnknown(data['period']!, _periodMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_periodMeta);
+    }
+    if (data.containsKey('professor_name')) {
+      context.handle(
+        _professorNameMeta,
+        professorName.isAcceptableOrUnknown(
+          data['professor_name']!,
+          _professorNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_professorNameMeta);
+    }
+    if (data.containsKey('subject_name')) {
+      context.handle(
+        _subjectNameMeta,
+        subjectName.isAcceptableOrUnknown(
+          data['subject_name']!,
+          _subjectNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('subject_color_value')) {
+      context.handle(
+        _subjectColorValueMeta,
+        subjectColorValue.isAcceptableOrUnknown(
+          data['subject_color_value']!,
+          _subjectColorValueMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SchoolTimetableEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SchoolTimetableEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      profileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_id'],
+      )!,
+      weekday: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}weekday'],
+      )!,
+      period: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}period'],
+      )!,
+      professorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}professor_name'],
+      )!,
+      subjectName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_name'],
+      ),
+      subjectColorValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}subject_color_value'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SchoolTimetableEntriesTable createAlias(String alias) {
+    return $SchoolTimetableEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class SchoolTimetableEntry extends DataClass
+    implements Insertable<SchoolTimetableEntry> {
+  final String id;
+  final String profileId;
+  final int weekday;
+  final int period;
+  final String professorName;
+  final String? subjectName;
+  final int? subjectColorValue;
+  final DateTime updatedAt;
+  const SchoolTimetableEntry({
+    required this.id,
+    required this.profileId,
+    required this.weekday,
+    required this.period,
+    required this.professorName,
+    this.subjectName,
+    this.subjectColorValue,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['weekday'] = Variable<int>(weekday);
+    map['period'] = Variable<int>(period);
+    map['professor_name'] = Variable<String>(professorName);
+    if (!nullToAbsent || subjectName != null) {
+      map['subject_name'] = Variable<String>(subjectName);
+    }
+    if (!nullToAbsent || subjectColorValue != null) {
+      map['subject_color_value'] = Variable<int>(subjectColorValue);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SchoolTimetableEntriesCompanion toCompanion(bool nullToAbsent) {
+    return SchoolTimetableEntriesCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      weekday: Value(weekday),
+      period: Value(period),
+      professorName: Value(professorName),
+      subjectName: subjectName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subjectName),
+      subjectColorValue: subjectColorValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subjectColorValue),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SchoolTimetableEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SchoolTimetableEntry(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      weekday: serializer.fromJson<int>(json['weekday']),
+      period: serializer.fromJson<int>(json['period']),
+      professorName: serializer.fromJson<String>(json['professorName']),
+      subjectName: serializer.fromJson<String?>(json['subjectName']),
+      subjectColorValue: serializer.fromJson<int?>(json['subjectColorValue']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'weekday': serializer.toJson<int>(weekday),
+      'period': serializer.toJson<int>(period),
+      'professorName': serializer.toJson<String>(professorName),
+      'subjectName': serializer.toJson<String?>(subjectName),
+      'subjectColorValue': serializer.toJson<int?>(subjectColorValue),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SchoolTimetableEntry copyWith({
+    String? id,
+    String? profileId,
+    int? weekday,
+    int? period,
+    String? professorName,
+    Value<String?> subjectName = const Value.absent(),
+    Value<int?> subjectColorValue = const Value.absent(),
+    DateTime? updatedAt,
+  }) => SchoolTimetableEntry(
+    id: id ?? this.id,
+    profileId: profileId ?? this.profileId,
+    weekday: weekday ?? this.weekday,
+    period: period ?? this.period,
+    professorName: professorName ?? this.professorName,
+    subjectName: subjectName.present ? subjectName.value : this.subjectName,
+    subjectColorValue: subjectColorValue.present
+        ? subjectColorValue.value
+        : this.subjectColorValue,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  SchoolTimetableEntry copyWithCompanion(SchoolTimetableEntriesCompanion data) {
+    return SchoolTimetableEntry(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      weekday: data.weekday.present ? data.weekday.value : this.weekday,
+      period: data.period.present ? data.period.value : this.period,
+      professorName: data.professorName.present
+          ? data.professorName.value
+          : this.professorName,
+      subjectName: data.subjectName.present
+          ? data.subjectName.value
+          : this.subjectName,
+      subjectColorValue: data.subjectColorValue.present
+          ? data.subjectColorValue.value
+          : this.subjectColorValue,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SchoolTimetableEntry(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('weekday: $weekday, ')
+          ..write('period: $period, ')
+          ..write('professorName: $professorName, ')
+          ..write('subjectName: $subjectName, ')
+          ..write('subjectColorValue: $subjectColorValue, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    profileId,
+    weekday,
+    period,
+    professorName,
+    subjectName,
+    subjectColorValue,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SchoolTimetableEntry &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.weekday == this.weekday &&
+          other.period == this.period &&
+          other.professorName == this.professorName &&
+          other.subjectName == this.subjectName &&
+          other.subjectColorValue == this.subjectColorValue &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SchoolTimetableEntriesCompanion
+    extends UpdateCompanion<SchoolTimetableEntry> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<int> weekday;
+  final Value<int> period;
+  final Value<String> professorName;
+  final Value<String?> subjectName;
+  final Value<int?> subjectColorValue;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const SchoolTimetableEntriesCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.weekday = const Value.absent(),
+    this.period = const Value.absent(),
+    this.professorName = const Value.absent(),
+    this.subjectName = const Value.absent(),
+    this.subjectColorValue = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SchoolTimetableEntriesCompanion.insert({
+    required String id,
+    required String profileId,
+    required int weekday,
+    required int period,
+    required String professorName,
+    this.subjectName = const Value.absent(),
+    this.subjectColorValue = const Value.absent(),
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       profileId = Value(profileId),
+       weekday = Value(weekday),
+       period = Value(period),
+       professorName = Value(professorName),
+       updatedAt = Value(updatedAt);
+  static Insertable<SchoolTimetableEntry> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<int>? weekday,
+    Expression<int>? period,
+    Expression<String>? professorName,
+    Expression<String>? subjectName,
+    Expression<int>? subjectColorValue,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (weekday != null) 'weekday': weekday,
+      if (period != null) 'period': period,
+      if (professorName != null) 'professor_name': professorName,
+      if (subjectName != null) 'subject_name': subjectName,
+      if (subjectColorValue != null) 'subject_color_value': subjectColorValue,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SchoolTimetableEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? profileId,
+    Value<int>? weekday,
+    Value<int>? period,
+    Value<String>? professorName,
+    Value<String?>? subjectName,
+    Value<int?>? subjectColorValue,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return SchoolTimetableEntriesCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      weekday: weekday ?? this.weekday,
+      period: period ?? this.period,
+      professorName: professorName ?? this.professorName,
+      subjectName: subjectName ?? this.subjectName,
+      subjectColorValue: subjectColorValue ?? this.subjectColorValue,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (weekday.present) {
+      map['weekday'] = Variable<int>(weekday.value);
+    }
+    if (period.present) {
+      map['period'] = Variable<int>(period.value);
+    }
+    if (professorName.present) {
+      map['professor_name'] = Variable<String>(professorName.value);
+    }
+    if (subjectName.present) {
+      map['subject_name'] = Variable<String>(subjectName.value);
+    }
+    if (subjectColorValue.present) {
+      map['subject_color_value'] = Variable<int>(subjectColorValue.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SchoolTimetableEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('weekday: $weekday, ')
+          ..write('period: $period, ')
+          ..write('professorName: $professorName, ')
+          ..write('subjectName: $subjectName, ')
+          ..write('subjectColorValue: $subjectColorValue, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5932,6 +6466,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $HomeworkIdentityMappingsTable(this);
   late final $DiagnosticEntriesTable diagnosticEntries =
       $DiagnosticEntriesTable(this);
+  late final $SchoolTimetableEntriesTable schoolTimetableEntries =
+      $SchoolTimetableEntriesTable(this);
   late final Index profilesByConnectionYear = Index(
     'profiles_by_connection_year',
     'CREATE INDEX profiles_by_connection_year ON student_profiles (connection_id, academic_year)',
@@ -5960,6 +6496,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'deadlines_by_personal_due',
     'CREATE INDEX deadlines_by_personal_due ON deadlines (personal_due_on)',
   );
+  late final Index timetableByProfileDayPeriod = Index(
+    'timetable_by_profile_day_period',
+    'CREATE UNIQUE INDEX timetable_by_profile_day_period ON school_timetable_entries (profile_id, weekday, period)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5977,6 +6517,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     syncStates,
     homeworkIdentityMappings,
     diagnosticEntries,
+    schoolTimetableEntries,
     profilesByConnectionYear,
     subjectsByProfileYear,
     sourceRecordsByProfileDay,
@@ -5984,6 +6525,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     homeworkByProfileSubject,
     deadlinesBySourceDue,
     deadlinesByPersonalDue,
+    timetableByProfileDayPeriod,
   ];
 }
 
@@ -7185,6 +7727,34 @@ final class $$StudentProfilesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $SchoolTimetableEntriesTable,
+    List<SchoolTimetableEntry>
+  >
+  _schoolTimetableEntriesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.schoolTimetableEntries,
+        aliasName: $_aliasNameGenerator(
+          db.studentProfiles.id,
+          db.schoolTimetableEntries.profileId,
+        ),
+      );
+
+  $$SchoolTimetableEntriesTableProcessedTableManager
+  get schoolTimetableEntriesRefs {
+    final manager = $$SchoolTimetableEntriesTableTableManager(
+      $_db,
+      $_db.schoolTimetableEntries,
+    ).filter((f) => f.profileId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _schoolTimetableEntriesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$StudentProfilesTableFilterComposer
@@ -7362,6 +7932,32 @@ class $$StudentProfilesTableFilterComposer
               }) => $$HomeworkIdentityMappingsTableFilterComposer(
                 $db: $db,
                 $table: $db.homeworkIdentityMappings,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> schoolTimetableEntriesRefs(
+    Expression<bool> Function($$SchoolTimetableEntriesTableFilterComposer f) f,
+  ) {
+    final $$SchoolTimetableEntriesTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.schoolTimetableEntries,
+          getReferencedColumn: (t) => t.profileId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SchoolTimetableEntriesTableFilterComposer(
+                $db: $db,
+                $table: $db.schoolTimetableEntries,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -7607,6 +8203,32 @@ class $$StudentProfilesTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> schoolTimetableEntriesRefs<T extends Object>(
+    Expression<T> Function($$SchoolTimetableEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$SchoolTimetableEntriesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.schoolTimetableEntries,
+          getReferencedColumn: (t) => t.profileId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SchoolTimetableEntriesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.schoolTimetableEntries,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$StudentProfilesTableTableManager
@@ -7629,6 +8251,7 @@ class $$StudentProfilesTableTableManager
             bool homeworkItemsRefs,
             bool syncStatesRefs,
             bool homeworkIdentityMappingsRefs,
+            bool schoolTimetableEntriesRefs,
           })
         > {
   $$StudentProfilesTableTableManager(
@@ -7696,6 +8319,7 @@ class $$StudentProfilesTableTableManager
                 homeworkItemsRefs = false,
                 syncStatesRefs = false,
                 homeworkIdentityMappingsRefs = false,
+                schoolTimetableEntriesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -7706,6 +8330,7 @@ class $$StudentProfilesTableTableManager
                     if (syncStatesRefs) db.syncStates,
                     if (homeworkIdentityMappingsRefs)
                       db.homeworkIdentityMappings,
+                    if (schoolTimetableEntriesRefs) db.schoolTimetableEntries,
                   ],
                   addJoins:
                       <
@@ -7848,6 +8473,27 @@ class $$StudentProfilesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (schoolTimetableEntriesRefs)
+                        await $_getPrefetchedData<
+                          StudentProfile,
+                          $StudentProfilesTable,
+                          SchoolTimetableEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StudentProfilesTableReferences
+                              ._schoolTimetableEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StudentProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).schoolTimetableEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.profileId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -7875,6 +8521,7 @@ typedef $$StudentProfilesTableProcessedTableManager =
         bool homeworkItemsRefs,
         bool syncStatesRefs,
         bool homeworkIdentityMappingsRefs,
+        bool schoolTimetableEntriesRefs,
       })
     >;
 typedef $$SubjectsTableCreateCompanionBuilder =
@@ -11960,6 +12607,413 @@ typedef $$DiagnosticEntriesTableProcessedTableManager =
       DiagnosticEntry,
       PrefetchHooks Function()
     >;
+typedef $$SchoolTimetableEntriesTableCreateCompanionBuilder =
+    SchoolTimetableEntriesCompanion Function({
+      required String id,
+      required String profileId,
+      required int weekday,
+      required int period,
+      required String professorName,
+      Value<String?> subjectName,
+      Value<int?> subjectColorValue,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$SchoolTimetableEntriesTableUpdateCompanionBuilder =
+    SchoolTimetableEntriesCompanion Function({
+      Value<String> id,
+      Value<String> profileId,
+      Value<int> weekday,
+      Value<int> period,
+      Value<String> professorName,
+      Value<String?> subjectName,
+      Value<int?> subjectColorValue,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$SchoolTimetableEntriesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SchoolTimetableEntriesTable,
+          SchoolTimetableEntry
+        > {
+  $$SchoolTimetableEntriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StudentProfilesTable _profileIdTable(_$AppDatabase db) =>
+      db.studentProfiles.createAlias(
+        $_aliasNameGenerator(
+          db.schoolTimetableEntries.profileId,
+          db.studentProfiles.id,
+        ),
+      );
+
+  $$StudentProfilesTableProcessedTableManager get profileId {
+    final $_column = $_itemColumn<String>('profile_id')!;
+
+    final manager = $$StudentProfilesTableTableManager(
+      $_db,
+      $_db.studentProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_profileIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SchoolTimetableEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $SchoolTimetableEntriesTable> {
+  $$SchoolTimetableEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get weekday => $composableBuilder(
+    column: $table.weekday,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get period => $composableBuilder(
+    column: $table.period,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get professorName => $composableBuilder(
+    column: $table.professorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subjectName => $composableBuilder(
+    column: $table.subjectName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get subjectColorValue => $composableBuilder(
+    column: $table.subjectColorValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StudentProfilesTableFilterComposer get profileId {
+    final $$StudentProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.profileId,
+      referencedTable: $db.studentProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudentProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.studentProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SchoolTimetableEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SchoolTimetableEntriesTable> {
+  $$SchoolTimetableEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get weekday => $composableBuilder(
+    column: $table.weekday,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get period => $composableBuilder(
+    column: $table.period,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get professorName => $composableBuilder(
+    column: $table.professorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subjectName => $composableBuilder(
+    column: $table.subjectName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get subjectColorValue => $composableBuilder(
+    column: $table.subjectColorValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StudentProfilesTableOrderingComposer get profileId {
+    final $$StudentProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.profileId,
+      referencedTable: $db.studentProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudentProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.studentProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SchoolTimetableEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SchoolTimetableEntriesTable> {
+  $$SchoolTimetableEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get weekday =>
+      $composableBuilder(column: $table.weekday, builder: (column) => column);
+
+  GeneratedColumn<int> get period =>
+      $composableBuilder(column: $table.period, builder: (column) => column);
+
+  GeneratedColumn<String> get professorName => $composableBuilder(
+    column: $table.professorName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get subjectName => $composableBuilder(
+    column: $table.subjectName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get subjectColorValue => $composableBuilder(
+    column: $table.subjectColorValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$StudentProfilesTableAnnotationComposer get profileId {
+    final $$StudentProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.profileId,
+      referencedTable: $db.studentProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudentProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.studentProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SchoolTimetableEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SchoolTimetableEntriesTable,
+          SchoolTimetableEntry,
+          $$SchoolTimetableEntriesTableFilterComposer,
+          $$SchoolTimetableEntriesTableOrderingComposer,
+          $$SchoolTimetableEntriesTableAnnotationComposer,
+          $$SchoolTimetableEntriesTableCreateCompanionBuilder,
+          $$SchoolTimetableEntriesTableUpdateCompanionBuilder,
+          (SchoolTimetableEntry, $$SchoolTimetableEntriesTableReferences),
+          SchoolTimetableEntry,
+          PrefetchHooks Function({bool profileId})
+        > {
+  $$SchoolTimetableEntriesTableTableManager(
+    _$AppDatabase db,
+    $SchoolTimetableEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SchoolTimetableEntriesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$SchoolTimetableEntriesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SchoolTimetableEntriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> profileId = const Value.absent(),
+                Value<int> weekday = const Value.absent(),
+                Value<int> period = const Value.absent(),
+                Value<String> professorName = const Value.absent(),
+                Value<String?> subjectName = const Value.absent(),
+                Value<int?> subjectColorValue = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SchoolTimetableEntriesCompanion(
+                id: id,
+                profileId: profileId,
+                weekday: weekday,
+                period: period,
+                professorName: professorName,
+                subjectName: subjectName,
+                subjectColorValue: subjectColorValue,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String profileId,
+                required int weekday,
+                required int period,
+                required String professorName,
+                Value<String?> subjectName = const Value.absent(),
+                Value<int?> subjectColorValue = const Value.absent(),
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SchoolTimetableEntriesCompanion.insert(
+                id: id,
+                profileId: profileId,
+                weekday: weekday,
+                period: period,
+                professorName: professorName,
+                subjectName: subjectName,
+                subjectColorValue: subjectColorValue,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SchoolTimetableEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({profileId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (profileId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.profileId,
+                                referencedTable:
+                                    $$SchoolTimetableEntriesTableReferences
+                                        ._profileIdTable(db),
+                                referencedColumn:
+                                    $$SchoolTimetableEntriesTableReferences
+                                        ._profileIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SchoolTimetableEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SchoolTimetableEntriesTable,
+      SchoolTimetableEntry,
+      $$SchoolTimetableEntriesTableFilterComposer,
+      $$SchoolTimetableEntriesTableOrderingComposer,
+      $$SchoolTimetableEntriesTableAnnotationComposer,
+      $$SchoolTimetableEntriesTableCreateCompanionBuilder,
+      $$SchoolTimetableEntriesTableUpdateCompanionBuilder,
+      (SchoolTimetableEntry, $$SchoolTimetableEntriesTableReferences),
+      SchoolTimetableEntry,
+      PrefetchHooks Function({bool profileId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11991,4 +13045,9 @@ class $AppDatabaseManager {
       );
   $$DiagnosticEntriesTableTableManager get diagnosticEntries =>
       $$DiagnosticEntriesTableTableManager(_db, _db.diagnosticEntries);
+  $$SchoolTimetableEntriesTableTableManager get schoolTimetableEntries =>
+      $$SchoolTimetableEntriesTableTableManager(
+        _db,
+        _db.schoolTimetableEntries,
+      );
 }

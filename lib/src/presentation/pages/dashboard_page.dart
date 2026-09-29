@@ -3,15 +3,18 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/agenda/homework_agenda_item.dart';
 import '../../domain/agenda/manual_homework_input.dart';
+import '../../domain/auth/student_gender.dart';
 import '../../domain/homework/school_date.dart';
 import '../../domain/diagnostics/diagnostic_event.dart';
 import '../../domain/sharing/homework_file_sharer.dart';
 import '../../domain/use_cases/share_homework.dart';
 import '../controllers/app_flow_controller.dart';
 import '../design_system/diarioup_tokens.dart';
+import '../formatters/student_greeting.dart';
 import '../l10n/app_copy.dart';
 import '../providers/app_providers.dart';
 import '../routing/app_router.dart';
@@ -21,6 +24,7 @@ import '../widgets/homework_share_sheet.dart';
 import '../widgets/manual_entry_dialogs.dart';
 import '../widgets/subjects_panel.dart';
 import 'settings_page.dart';
+import 'timetable_page.dart';
 
 final class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -33,6 +37,10 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
     with WidgetsBindingObserver {
   int _selectedIndex = 0;
   var _isSharing = false;
+  final _profilePhotoSettingsKey = GlobalKey();
+  var _updateCheckInProgress = false;
+  DateTime? _nextUpdateCheckAt;
+  var _updateDialogShown = false;
 
   @override
   void initState() {
@@ -53,6 +61,7 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
     final profileId = ref.read(appFlowProvider).activeProfile?.sourceProfileId;
     if (profileId != null) {
       ref.invalidate(reminderBootstrapProvider(profileId));
+      _scheduleUpdateCheck(profileId);
     }
   }
 
@@ -76,17 +85,28 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
               ?.value;
     if (profileId != null) {
       ref.watch(reminderBootstrapProvider(profileId));
+      if (customization?.checkUpdates == true) {
+        _scheduleUpdateCheck(profileId);
+      }
     }
     final pages = <Widget>[
       _AgendaPanel(
         profileId: profileId,
         profileLabel: profile?.displayLabel ?? AppCopy.appName,
+        profileGender: profile?.gender,
       ),
       profileId == null
           ? const SizedBox.shrink()
           : SubjectsPanel(profileId: profileId),
+      profileId == null
+          ? const SizedBox.shrink()
+          : TimetablePage(
+              profileId: profileId,
+              onClose: () => setState(() => _selectedIndex = 0),
+            ),
       SettingsPage(
         profileId: profileId,
+        profilePhotoKey: _profilePhotoSettingsKey,
         onSignOut: _signOut,
         onCreateHomework: () async {
           if (profileId != null) await _createHomework(profileId);
@@ -97,87 +117,186 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
       ),
     ];
     return Scaffold(
-      appBar: AppBar(
-        title: const BrandMark(compact: true),
-        actions: <Widget>[
-          if (profileId != null)
-            Builder(
-              builder: (buttonContext) => IconButton(
-                onPressed: _isSharing
-                    ? null
-                    : () => _shareHomework(buttonContext, profileId),
-                tooltip: AppCopy.shareHomework,
-                icon: _isSharing
-                    ? const SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.ios_share_rounded),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.only(right: DiarioUpSpacing.md),
-            child: CircleAvatar(
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.16),
-              child: profileImage == null
-                  ? Text(
-                      _initial(profile?.displayLabel),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    )
-                  : ClipOval(
-                      child: SizedBox.expand(
-                        child: Image.memory(
-                          profileImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Center(
-                            child: Text(
+      appBar: _selectedIndex == 2
+          ? null
+          : AppBar(
+              title: const BrandMark(compact: true),
+              actions: <Widget>[
+                if (profileId != null)
+                  Builder(
+                    builder: (buttonContext) => IconButton(
+                      onPressed: _isSharing
+                          ? null
+                          : () => _shareHomework(buttonContext, profileId),
+                      tooltip: AppCopy.shareHomework,
+                      icon: _isSharing
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.ios_share_rounded),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(right: DiarioUpSpacing.xs),
+                  child: IconButton(
+                    tooltip: AppCopy.openProfilePhotoSettings,
+                    onPressed: _openProfilePhotoSettings,
+                    icon: CircleAvatar(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.16),
+                      child: profileImage == null
+                          ? Text(
                               _initial(profile?.displayLabel),
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.w700,
                               ),
+                            )
+                          : ClipOval(
+                              child: SizedBox.expand(
+                                child: Image.memory(
+                                  profileImage,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Center(
+                                        child: Text(
+                                          _initial(profile?.displayLabel),
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
                     ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-      body: _DashboardBackground(
-        imageBytes: backgroundImage,
-        child: SafeArea(child: pages[_selectedIndex]),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.calendar_today_outlined),
-            selectedIcon: Icon(Icons.calendar_today_rounded),
-            label: AppCopy.agenda,
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book_rounded),
-            label: AppCopy.subjects,
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: AppCopy.settings,
-          ),
-        ],
-      ),
+      body: _selectedIndex == 2
+          ? pages[_selectedIndex]
+          : _DashboardBackground(
+              imageBytes: backgroundImage,
+              child: SafeArea(child: pages[_selectedIndex]),
+            ),
+      bottomNavigationBar: _selectedIndex == 2
+          ? null
+          : NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                setState(() => _selectedIndex = index);
+              },
+              destinations: const <NavigationDestination>[
+                NavigationDestination(
+                  icon: Icon(Icons.calendar_today_outlined),
+                  selectedIcon: Icon(Icons.calendar_today_rounded),
+                  label: AppCopy.agenda,
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.menu_book_outlined),
+                  selectedIcon: Icon(Icons.menu_book_rounded),
+                  label: AppCopy.subjects,
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.calendar_view_week_outlined),
+                  selectedIcon: Icon(Icons.calendar_view_week_rounded),
+                  label: AppCopy.timetable,
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.settings_outlined),
+                  selectedIcon: Icon(Icons.settings_rounded),
+                  label: AppCopy.settings,
+                ),
+              ],
+            ),
     );
+  }
+
+  void _scheduleUpdateCheck(String profileId) {
+    final now = DateTime.now();
+    final nextCheck = _nextUpdateCheckAt;
+    if (_updateCheckInProgress ||
+        (nextCheck != null && now.isBefore(nextCheck))) {
+      return;
+    }
+    _updateCheckInProgress = true;
+    _nextUpdateCheckAt = now.add(const Duration(minutes: 15));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final customization = await ref.read(
+          profileCustomizationProvider(profileId).future,
+        );
+        if (!mounted) return;
+        if (!customization.checkUpdates) {
+          _nextUpdateCheckAt = null;
+          return;
+        }
+        final installedVersion = await ref.read(appVersionProvider.future);
+        final release = await ref.read(checkForAppUpdateProvider)(
+          installedVersion: installedVersion,
+        );
+        _nextUpdateCheckAt = DateTime.now().add(const Duration(hours: 6));
+        if (release == null || !mounted || _updateDialogShown) return;
+        _updateDialogShown = true;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text(AppCopy.updateAvailable),
+            content: Text(
+              AppCopy.updateAvailableBody.replaceFirst(
+                '{version}',
+                release.version,
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text(AppCopy.cancel),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop();
+                  final opened = await launchUrl(
+                    release.releasePage,
+                    mode: LaunchMode.externalApplication,
+                  );
+                  if (!opened && mounted) {
+                    _showMessage(AppCopy.updateLinkError);
+                  }
+                },
+                child: const Text(AppCopy.downloadUpdate),
+              ),
+            ],
+          ),
+        );
+      } on Object {
+        // Il controllo è best-effort: rete assente e rate limit non bloccano l'app.
+      } finally {
+        _updateCheckInProgress = false;
+      }
+    });
+  }
+
+  void _openProfilePhotoSettings() {
+    setState(() => _selectedIndex = 3);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final targetContext = _profilePhotoSettingsKey.currentContext;
+      if (!mounted || targetContext == null) return;
+      await Scrollable.ensureVisible(
+        targetContext,
+        alignment: 0.5,
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : DiarioUpMotion.standard,
+        curve: Curves.easeInOut,
+      );
+    });
   }
 
   Future<void> _signOut() async {
@@ -349,10 +468,15 @@ final class _DashboardBackground extends StatelessWidget {
 enum _AgendaFilter { todo, completed }
 
 final class _AgendaPanel extends ConsumerStatefulWidget {
-  const _AgendaPanel({required this.profileId, required this.profileLabel});
+  const _AgendaPanel({
+    required this.profileId,
+    required this.profileLabel,
+    required this.profileGender,
+  });
 
   final String? profileId;
   final String profileLabel;
+  final StudentGender? profileGender;
 
   @override
   ConsumerState<_AgendaPanel> createState() => _AgendaPanelState();
@@ -373,7 +497,7 @@ final class _AgendaPanelState extends ConsumerState<_AgendaPanel> {
       padding: const EdgeInsets.all(DiarioUpSpacing.lg),
       children: <Widget>[
         Text(
-          '${AppCopy.dashboardGreeting}, ${widget.profileLabel}',
+          '${studentGreeting(displayLabel: widget.profileLabel, gender: widget.profileGender ?? StudentGender.unknown)}, ${widget.profileLabel}',
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: DiarioUpSpacing.xs),
@@ -464,6 +588,7 @@ final class _AgendaPanelState extends ConsumerState<_AgendaPanel> {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 3),
           content: const Text(AppCopy.homeworkCompleted),
           action: SnackBarAction(
             label: AppCopy.undo,

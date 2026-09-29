@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../domain/errors/didup_failure.dart';
+import '../../domain/auth/student_gender.dart';
 import 'session.dart';
 
 final class SessionCodec {
@@ -24,6 +25,7 @@ final class SessionCodec {
           'schoolMinistryCode': entry.value.schoolMinistryCode,
           'notificationOptions': entry.value.notificationOptions,
           'displayLabel': entry.value.displayLabel,
+          'gender': entry.value.gender.name,
           'academicYear': entry.value.academicYear,
           'academicYearStart': entry.value.academicYearStart
               ?.toUtc()
@@ -48,6 +50,7 @@ final class SessionCodec {
           schoolMinistryCode: _requiredString(value, 'schoolMinistryCode'),
           notificationOptions: _stringBoolMap(value['notificationOptions']),
           displayLabel: _optionalString(value['displayLabel']) ?? '',
+          gender: _decodeGender(value['gender']),
           academicYear: _optionalString(value['academicYear']),
           academicYearStart: _optionalDate(value['academicYearStart']),
         );
@@ -108,4 +111,12 @@ DateTime? _optionalDate(Object? value) {
 List<String> _stringList(Object? value) {
   if (value is! List<Object?>) return const <String>[];
   return value.whereType<String>().toList(growable: false);
+}
+
+StudentGender _decodeGender(Object? value) {
+  final name = _optionalString(value);
+  for (final gender in StudentGender.values) {
+    if (gender.name == name) return gender;
+  }
+  return StudentGender.unknown;
 }

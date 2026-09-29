@@ -132,7 +132,25 @@ alcuna richiesta di permesso durante onboarding o login.
    avvisi. Se il produttore applica restrizioni aggressive in background,
    annotare modello e impostazioni di risparmio energetico nel report.
 
-## 5. Verifiche di qualità sul dispositivo
+## 5. Orario e aggiornamenti
+
+1. Aprire la scheda **Orario** e verificare la griglia della classe 1B dal
+   lunedì al venerdì, confrontandola con `Documenti/orario.txt`.
+2. Toccare una lezione, assegnare una materia e un colore, quindi alternare
+   **Professori** e **Materie**. Chiudere e riaprire l'app: la configurazione
+   deve restare invariata anche in modalità aereo.
+3. Scorrere la tabella sia in verticale sia in orizzontale su uno schermo
+   piccolo. Il pulsante **X** deve chiudere la vista a tutto schermo e tornare
+   al Diario.
+4. In **Impostazioni**, verificare che **Controlla aggiornamenti** sia attivo
+   per impostazione predefinita. Con rete assente, l'avvio non deve rallentare
+   né mostrare errori bloccanti.
+5. Quando su GitHub è pubblicata una versione con tag superiore a quella
+   installata, riaprire l'app e verificare il dialogo con il collegamento alla
+   pagina ufficiale della release. Disattivando il flag, il dialogo non deve
+   più essere proposto.
+
+## 6. Verifiche di qualità sul dispositivo
 
 - Aumentare la dimensione del testo dalle impostazioni Android e controllare che
   i contenuti principali restino leggibili senza sovrapposizioni.
@@ -144,7 +162,7 @@ alcuna richiesta di permesso durante onboarding o login.
 - Disattivare la rete durante una sincronizzazione: i dati già presenti non
   devono scomparire e deve essere disponibile un'azione di nuovo tentativo.
 
-## 6. Esito del collaudo
+## 7. Esito del collaudo
 
 Annotare: modello telefono, versione Android, versione DiarioUp, ambiente,
 data/ora, esito dei percorsi funzionali e dei promemoria, stato del permesso e

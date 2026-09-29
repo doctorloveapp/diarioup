@@ -1,3 +1,5 @@
+import '../../domain/auth/student_gender.dart';
+
 final class DidupProfileSession {
   const DidupProfileSession({
     required this.sourceProfileId,
@@ -5,6 +7,7 @@ final class DidupProfileSession {
     required this.schoolMinistryCode,
     required this.notificationOptions,
     required this.displayLabel,
+    this.gender = StudentGender.unknown,
     this.academicYear,
     this.academicYearStart,
   });
@@ -14,6 +17,7 @@ final class DidupProfileSession {
   final String schoolMinistryCode;
   final Map<String, bool> notificationOptions;
   final String displayLabel;
+  final StudentGender gender;
   final String? academicYear;
   final DateTime? academicYearStart;
 }

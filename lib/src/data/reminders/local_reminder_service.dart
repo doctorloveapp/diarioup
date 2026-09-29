@@ -24,7 +24,23 @@ final class LocalReminderService implements ReminderService {
   late tz.Location _location;
 
   @override
-  Future<void> initialize() => _initialization ??= _initialize();
+  Future<void> initialize() {
+    final pending = _initialization;
+    if (pending != null) return pending;
+
+    late final Future<void> attempt;
+    attempt = _initialize().onError((error, stackTrace) {
+      // Un errore nativo transitorio non deve rendere il servizio inutilizzabile
+      // fino al riavvio dell'app: il comando Riprova deve poter reinizializzare.
+      if (identical(_initialization, attempt)) _initialization = null;
+      Error.throwWithStackTrace(
+        error ?? StateError('Notification service initialization failed'),
+        stackTrace,
+      );
+    });
+    _initialization = attempt;
+    return attempt;
+  }
 
   Future<void> _initialize() async {
     tz_data.initializeTimeZones();
@@ -37,9 +53,12 @@ final class LocalReminderService implements ReminderService {
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    await _plugin.initialize(
+    final initialized = await _plugin.initialize(
       settings: const InitializationSettings(android: android, iOS: ios),
     );
+    if (initialized != true) {
+      throw StateError('Notification service initialization failed');
+    }
   }
 
   Future<tz.Location> _deviceLocation() async {

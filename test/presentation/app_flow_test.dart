@@ -5,6 +5,8 @@ import 'package:diarioup/src/app/diarioup_app.dart';
 import 'package:diarioup/src/data/database/app_database.dart' show AppDatabase;
 import 'package:diarioup/src/domain/profile/gallery_image_selector.dart';
 import 'package:diarioup/src/domain/profile/profile_customization.dart';
+import 'package:diarioup/src/domain/release/app_release.dart';
+import 'package:diarioup/src/domain/repositories/app_release_repository.dart';
 import 'package:diarioup/src/domain/repositories/profile_customization_repository.dart';
 import 'package:diarioup/src/domain/auth/auth_credentials.dart';
 import 'package:diarioup/src/domain/auth/auth_result.dart';
@@ -14,6 +16,7 @@ import 'package:diarioup/src/presentation/l10n/app_copy.dart';
 import 'package:diarioup/src/presentation/providers/app_providers.dart';
 import 'package:diarioup/src/domain/reminders/reminder_plan.dart';
 import 'package:diarioup/src/domain/reminders/reminder_service.dart';
+import 'package:diarioup/src/domain/use_cases/check_for_app_update.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,6 +111,65 @@ void main() {
     expect(find.textContaining(AppCopy.dashboardGreeting), findsNothing);
   });
 
+  testWidgets('mostra l avviso quando GitHub pubblica una versione piu nuova', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final database = AppDatabase(NativeDatabase.memory());
+    final repository = TestDidupRepository(database: database);
+    final customizationRepository = _MemoryCustomizationRepository(
+      checkUpdates: true,
+    );
+    addTearDown(database.close);
+    addTearDown(customizationRepository.close);
+    await repository.login(
+      AuthCredentials(
+        schoolCode: 'TEST0000',
+        username: 'utente-test',
+        password: 'solo-per-il-login-iniziale',
+      ),
+    );
+    await repository.rememberActiveProfile('test-profile');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWith((ref) async => database),
+          didupRepositoryProvider.overrideWith((ref) async => repository),
+          reminderServiceProvider.overrideWith(
+            (ref) => _GrantedReminderService(),
+          ),
+          profileCustomizationRepositoryProvider.overrideWith(
+            (ref) async => customizationRepository,
+          ),
+          appVersionProvider.overrideWith((ref) async => '1.4.3+10'),
+          checkForAppUpdateProvider.overrideWith(
+            (ref) => CheckForAppUpdate(
+              _ReleaseRepository(
+                AppRelease(
+                  version: 'v1.5.0',
+                  releasePage: Uri.parse(
+                    'https://github.com/doctorloveapp/diarioup/releases/tag/v1.5.0',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+        child: const DiarioUpApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppCopy.updateAvailable), findsOneWidget);
+    expect(find.textContaining('v1.5.0'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('onboarding, login e dashboard sono navigabili', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
@@ -172,6 +234,10 @@ void main() {
     await tester.tap(find.byType(Checkbox).first);
     await tester.pumpAndSettle();
     expect(find.text(AppCopy.undo), findsOneWidget);
+    expect(
+      tester.widget<SnackBar>(find.byType(SnackBar)).duration,
+      const Duration(seconds: 3),
+    );
     expect(find.text(AppCopy.saveNote), findsOneWidget);
     await tester.tap(find.text(AppCopy.undo));
     await tester.pumpAndSettle();
@@ -213,7 +279,9 @@ void main() {
     expect(find.text('Italiano'), findsOneWidget);
     expect(find.text('Matematica'), findsOneWidget);
 
-    await tester.tap(find.text(AppCopy.settings));
+    await tester.tap(find.text(AppCopy.agenda));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(AppCopy.openProfilePhotoSettings));
     await tester.pumpAndSettle();
     expect(find.text(AppCopy.personalization), findsOneWidget);
     expect(find.text(AppCopy.themeMode), findsOneWidget);
@@ -229,6 +297,10 @@ void main() {
       scrollable: settingsScroll,
     );
     expect(find.text(AppCopy.profilePhoto), findsOneWidget);
+    expect(
+      tester.getCenter(find.text(AppCopy.profilePhoto)).dy,
+      inInclusiveRange(250, 550),
+    );
     expect(find.text(AppCopy.diaryBackground), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -278,8 +350,11 @@ final class _SyntheticGalleryImageSelector implements GalleryImageSelector {
 
 final class _MemoryCustomizationRepository
     implements ProfileCustomizationRepository {
+  _MemoryCustomizationRepository({bool checkUpdates = false})
+    : _value = ProfileCustomization(checkUpdates: checkUpdates);
+
   final _changes = StreamController<ProfileCustomization>.broadcast();
-  var _value = const ProfileCustomization();
+  ProfileCustomization _value;
   final _bytesByPath = <String, Uint8List>{};
 
   @override
@@ -310,6 +385,7 @@ final class _MemoryCustomizationRepository
         themeMode: _value.themeMode,
         primaryColorValue: _value.primaryColorValue,
         backgroundColorValue: _value.backgroundColorValue,
+        checkUpdates: _value.checkUpdates,
       ),
       ProfileImageKind.diaryBackground => ProfileCustomization(
         profileImagePath: _value.profileImagePath,
@@ -317,6 +393,7 @@ final class _MemoryCustomizationRepository
         themeMode: _value.themeMode,
         primaryColorValue: _value.primaryColorValue,
         backgroundColorValue: _value.backgroundColorValue,
+        checkUpdates: _value.checkUpdates,
       ),
     };
     _changes.add(_value);
@@ -341,11 +418,37 @@ final class _MemoryCustomizationRepository
       themeMode: themeMode,
       primaryColorValue: primaryColorValue,
       backgroundColorValue: backgroundColorValue,
+      checkUpdates: _value.checkUpdates,
+    );
+    _changes.add(_value);
+  }
+
+  @override
+  Future<void> saveCheckUpdates({
+    required String profileId,
+    required bool enabled,
+  }) async {
+    _value = ProfileCustomization(
+      profileImagePath: _value.profileImagePath,
+      diaryBackgroundPath: _value.diaryBackgroundPath,
+      themeMode: _value.themeMode,
+      primaryColorValue: _value.primaryColorValue,
+      backgroundColorValue: _value.backgroundColorValue,
+      checkUpdates: enabled,
     );
     _changes.add(_value);
   }
 
   Future<void> close() => _changes.close();
+}
+
+final class _ReleaseRepository implements AppReleaseRepository {
+  const _ReleaseRepository(this.release);
+
+  final AppRelease release;
+
+  @override
+  Future<AppRelease> fetchLatest() async => release;
 }
 
 final class _GrantedReminderService implements ReminderService {

@@ -47,6 +47,11 @@ void main() {
       expect(find.text(AppCopy.settings), findsOneWidget);
       expect(find.text(AppCopy.personalization), findsOneWidget);
       expect(find.text(AppCopy.themeMode), findsOneWidget);
+      expect(find.text(AppCopy.checkUpdates), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(0, -1200));
+      await tester.pumpAndSettle();
+      expect(find.text(AppCopy.reminderPermissionCheckFailed), findsOneWidget);
+      expect(find.byTooltip(AppCopy.retry), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

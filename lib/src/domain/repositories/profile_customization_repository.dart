@@ -24,4 +24,9 @@ abstract interface class ProfileCustomizationRepository {
     required int primaryColorValue,
     required int backgroundColorValue,
   });
+
+  Future<void> saveCheckUpdates({
+    required String profileId,
+    required bool enabled,
+  });
 }

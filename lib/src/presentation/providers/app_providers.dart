@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:dio/dio.dart';
 
 import '../../app/app_environment.dart';
 import '../../data/auth/didup_auth_service.dart';
@@ -24,6 +25,8 @@ import '../../data/reminders/reminder_coordinator.dart';
 import '../../data/repositories/didup_repository_impl.dart';
 import '../../data/sharing/diarioup_pdf_generator.dart';
 import '../../data/sharing/native_homework_file_sharer.dart';
+import '../../data/timetable/local_timetable_repository.dart';
+import '../../data/updates/github_app_release_repository.dart';
 import '../../domain/repositories/didup_repository.dart';
 import '../../domain/diagnostics/diagnostic_event.dart';
 import '../../domain/diagnostics/diagnostic_log.dart';
@@ -37,11 +40,15 @@ import '../../domain/profile/profile_customization.dart';
 import '../../domain/portability/user_data_exporter.dart';
 import '../../domain/privacy/app_data_eraser.dart';
 import '../../domain/repositories/profile_customization_repository.dart';
+import '../../domain/repositories/app_release_repository.dart';
+import '../../domain/repositories/timetable_repository.dart';
 import '../../domain/sharing/homework_file_sharer.dart';
 import '../../domain/sharing/homework_pdf_generator.dart';
 import '../../domain/sync/didup_sync.dart';
 import '../../domain/use_cases/authenticate_with_didup.dart';
 import '../../domain/use_cases/share_homework.dart';
+import '../../domain/use_cases/check_for_app_update.dart';
+import '../../domain/timetable/timetable_entry.dart';
 
 final appEnvironmentProvider = Provider<AppEnvironment>(
   (Ref ref) => AppEnvironment.fromDartDefines(),
@@ -70,6 +77,23 @@ final appVersionProvider = FutureProvider<String>((Ref ref) async {
   final info = await PackageInfo.fromPlatform();
   return '${info.version}+${info.buildNumber}';
 });
+
+final appReleaseRepositoryProvider = Provider<AppReleaseRepository>((Ref ref) {
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
+      sendTimeout: const Duration(seconds: 8),
+      headers: const <String, String>{'User-Agent': 'DiarioUp'},
+    ),
+  );
+  ref.onDispose(dio.close);
+  return GitHubAppReleaseRepository(dio: dio);
+});
+
+final checkForAppUpdateProvider = Provider<CheckForAppUpdate>(
+  (Ref ref) => CheckForAppUpdate(ref.watch(appReleaseRepositoryProvider)),
+);
 
 final galleryImageSelectorProvider = Provider<GalleryImageSelector>(
   (Ref ref) => ImagePickerGallerySelector(),
@@ -100,6 +124,22 @@ final customizationImageProvider = FutureProvider.autoDispose
       );
       return repository.loadImage(relativePath);
     });
+
+final timetableRepositoryProvider = FutureProvider<TimetableRepository>((
+  Ref ref,
+) async {
+  return LocalTimetableRepository(
+    database: await ref.watch(appDatabaseProvider.future),
+  );
+});
+
+final timetableProvider = StreamProvider.family<List<TimetableEntry>, String>((
+  Ref ref,
+  profileId,
+) async* {
+  final repository = await ref.watch(timetableRepositoryProvider.future);
+  yield* repository.watch(profileId);
+});
 
 final reminderServiceProvider = Provider<ReminderService>(
   (Ref ref) => LocalReminderService(),

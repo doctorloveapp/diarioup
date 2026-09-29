@@ -68,13 +68,16 @@ abstract final class DiarioUpTheme {
             background,
           )
         : DiarioUpColors.bordo;
+    final onPrimary = primary.computeLuminance() > 0.55
+        ? DiarioUpColors.inchiostro
+        : DiarioUpColors.superficie;
     final scheme =
         ColorScheme.fromSeed(
           seedColor: primary,
           brightness: effectiveBrightness,
         ).copyWith(
           primary: primary,
-          onPrimary: DiarioUpColors.superficie,
+          onPrimary: onPrimary,
           secondary: DiarioUpColors.verdePetrolio,
           tertiary: DiarioUpColors.ambra,
           surface: surface,
@@ -143,6 +146,9 @@ abstract final class DiarioUpTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          side: primary.computeLuminance() > 0.9
+              ? BorderSide(color: outline)
+              : null,
           minimumSize: const Size.fromHeight(48),
           padding: const EdgeInsets.symmetric(
             horizontal: DiarioUpSpacing.lg,

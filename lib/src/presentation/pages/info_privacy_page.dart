@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/diagnostics/diagnostic_event.dart';
 import '../../domain/sharing/homework_file_sharer.dart';
@@ -20,6 +21,11 @@ final class InfoPrivacyPage extends ConsumerStatefulWidget {
 }
 
 final class _InfoPrivacyPageState extends ConsumerState<InfoPrivacyPage> {
+  static final Uri _repositoryUri = Uri.https(
+    'github.com',
+    '/doctorloveapp/diarioup',
+  );
+
   var _isExporting = false;
   var _isDeleting = false;
 
@@ -39,6 +45,14 @@ final class _InfoPrivacyPageState extends ConsumerState<InfoPrivacyPage> {
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text(AppCopy.appVersion),
                   trailing: Text(version.value ?? '...'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.code_rounded),
+                  title: const Text(AppCopy.sourceRepository),
+                  subtitle: const Text(AppCopy.sourceRepositoryBody),
+                  trailing: const Icon(Icons.open_in_new_rounded),
+                  onTap: _openRepository,
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -143,6 +157,14 @@ final class _InfoPrivacyPageState extends ConsumerState<InfoPrivacyPage> {
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
+  }
+
+  Future<void> _openRepository() async {
+    final opened = await launchUrl(
+      _repositoryUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!opened && mounted) _showMessage(AppCopy.repositoryLinkError);
   }
 
   Future<void> _confirmDeleteAll() async {

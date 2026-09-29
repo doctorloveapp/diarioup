@@ -121,6 +121,12 @@ final class LocalProfileCustomizationRepository
     backgroundColorValue: backgroundColorValue,
   );
 
+  @override
+  Future<void> saveCheckUpdates({
+    required String profileId,
+    required bool enabled,
+  }) => _database.setCheckUpdates(profileId, enabled: enabled);
+
   Future<void> _storePath(
     String profileId,
     ProfileImageKind kind,

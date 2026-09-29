@@ -10,4 +10,4 @@ Il comando "Elimina tutti i dati DiarioUp" rimuove dal dispositivo database, ses
 
 DiarioUp è un'app indipendente e non è affiliata ad Argo Software.
 
-Versione informativa: 1.0 - 29 settembre 2026.
+Versione informativa: 1.0 - 29 Settembre 2026.

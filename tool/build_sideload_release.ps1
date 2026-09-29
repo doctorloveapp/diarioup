@@ -40,6 +40,16 @@ $flutterArguments = @(
     "--dart-define=DIDUP_CLIENT_VERSION=$clientVersion"
 )
 
+& flutter clean
+if ($LASTEXITCODE -ne 0) {
+    throw "La pulizia della build Flutter e terminata con codice $LASTEXITCODE."
+}
+
+& flutter pub get
+if ($LASTEXITCODE -ne 0) {
+    throw "Il ripristino delle dipendenze Flutter e terminato con codice $LASTEXITCODE."
+}
+
 & flutter @flutterArguments
 if ($LASTEXITCODE -ne 0) {
     throw "La compilazione Flutter e terminata con codice $LASTEXITCODE."
@@ -48,6 +58,37 @@ if ($LASTEXITCODE -ne 0) {
 $sourceApk = Join-Path $PSScriptRoot "..\build\app\outputs\flutter-apk\app-release.apk"
 if (-not (Test-Path -LiteralPath $sourceApk -PathType Leaf)) {
     throw "APK release non trovato dopo la compilazione."
+}
+
+# Una cache Flutter costruita tramite due path equivalenti (ad esempio C: e
+# un'unita subst) puo produrre un APK formalmente valido ma privo del bundle
+# Flutter. Senza font e NativeAssetsManifest l'interfaccia mostra glifi errati
+# e sqlite3 non puo essere inizializzato. Il rilascio deve fallire prima della
+# firma/verifica se manca anche un solo asset critico.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $sourceApk))
+try {
+    $entryNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    foreach ($entry in $archive.Entries) {
+        $null = $entryNames.Add($entry.FullName)
+    }
+    $requiredEntries = @(
+        "assets/flutter_assets/AssetManifest.bin",
+        "assets/flutter_assets/FontManifest.json",
+        "assets/flutter_assets/NativeAssetsManifest.json",
+        "assets/flutter_assets/assets/fonts/inter/InterVariable.ttf",
+        "assets/flutter_assets/fonts/MaterialIcons-Regular.otf",
+        "assets/flutter_assets/assets/logo_diarioup.png",
+        "assets/flutter_assets/assets/privacy/informativa_privacy.txt"
+    )
+    foreach ($requiredEntry in $requiredEntries) {
+        if (-not $entryNames.Contains($requiredEntry)) {
+            throw "APK incompleto: asset Flutter obbligatorio mancante: $requiredEntry"
+        }
+    }
+}
+finally {
+    $archive.Dispose()
 }
 
 $androidSdkRoot = $env:ANDROID_SDK_ROOT
@@ -71,6 +112,18 @@ $apksigner = Get-ChildItem -LiteralPath (Join-Path $androidSdkRoot "build-tools"
     Select-Object -First 1
 if ($null -eq $apksigner) {
     throw "apksigner.bat non trovato nell'Android SDK."
+}
+
+$aapt2 = Join-Path $apksigner.Directory.FullName "aapt2.exe"
+if (-not (Test-Path -LiteralPath $aapt2 -PathType Leaf)) {
+    throw "aapt2.exe non trovato accanto ad apksigner."
+}
+$resourceReport = & $aapt2 dump resources $sourceApk 2>&1
+if ($LASTEXITCODE -ne 0) {
+    throw "Impossibile verificare le risorse Android dell'APK."
+}
+if (-not (($resourceReport -join "`n") -match 'drawable/ic_stat_diarioup')) {
+    throw "APK incompleto: icona Android dei promemoria mancante."
 }
 
 $verificationOutput = & $apksigner.FullName verify --verbose --print-certs $sourceApk 2>&1
