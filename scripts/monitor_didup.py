@@ -472,13 +472,15 @@ def send_email(body: str) -> None:
         raise MonitorError("SMTP_TO non contiene destinatari validi.")
 
     try:
-        port = int(os.environ.get("SMTP_PORT", "587"))
+        port = int(os.environ.get("SMTP_PORT") or "587")
     except ValueError as error:
         raise MonitorError("SMTP_PORT deve essere un numero intero.") from error
     username = os.environ.get("SMTP_USERNAME", "").strip()
     password = os.environ.get("SMTP_PASSWORD", "")
-    use_ssl = os.environ.get("SMTP_USE_SSL", "false").lower() == "true"
-    use_starttls = os.environ.get("SMTP_USE_STARTTLS", "true").lower() == "true"
+    use_ssl = (os.environ.get("SMTP_USE_SSL") or "false").lower() == "true"
+    use_starttls = (
+        os.environ.get("SMTP_USE_STARTTLS") or "true"
+    ).lower() == "true"
 
     message = EmailMessage()
     message["Subject"] = os.environ.get(
