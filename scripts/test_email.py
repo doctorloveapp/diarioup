@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import smtplib
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from monitor_didup import MonitorError, send_email
 
@@ -18,7 +18,7 @@ TEST_SUBJECT = "Test Watchdog DiarioUp"
 def main() -> int:
     os.environ["SMTP_TO"] = TEST_RECIPIENT
     os.environ["SMTP_SUBJECT"] = TEST_SUBJECT
-    timestamp = datetime.now(UTC).replace(microsecond=0).isoformat()
+    timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     body = (
         "Questa è una mail di prova del watchdog DiarioUp.\n\n"
         f"Invio eseguito: {timestamp}\n"

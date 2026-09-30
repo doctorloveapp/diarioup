@@ -20,7 +20,7 @@ import ssl
 import sys
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from email.message import EmailMessage
 from enum import IntEnum
 from pathlib import Path
@@ -414,10 +414,10 @@ def monitor(
 
     new_baseline: dict[str, Any] = {
         "schemaVersion": 1,
-        "checkedAt": datetime.now(UTC).replace(microsecond=0).isoformat().replace(
-            "+00:00",
-            "Z",
-        ),
+        "checkedAt": datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z"),
         "officialAppVersion": official_version,
         "repositories": current_heads,
     }
