@@ -227,6 +227,8 @@ void main() {
     expect(find.text(AppCopy.agenda), findsOneWidget);
     expect(find.text('Leggere il capitolo assegnato'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Leggere il capitolo assegnato'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Leggere il capitolo assegnato'));
     await tester.pumpAndSettle();
     expect(find.text(AppCopy.homeworkDetail), findsOneWidget);
