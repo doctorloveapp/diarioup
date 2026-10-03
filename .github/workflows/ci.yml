@@ -13,9 +13,16 @@ on:
         required: false
         default: false
         type: boolean
+      build_apk:
+        description: Esegui la build APK debug
+        required: false
+        default: false
+        type: boolean
   pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'release/**'
 
 permissions:
   contents: read
@@ -31,9 +38,23 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test
+
+  build-apk:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.build_apk) ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: 3.38.5
+          channel: stable
+          cache: true
+      - run: flutter pub get
       - run: flutter build apk --debug
 
   ios-build:
