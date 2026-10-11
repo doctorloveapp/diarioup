@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-10-03T12:02:33Z",
+  "checkedAt": "2026-10-11T12:13:04Z",
   "officialAppVersion": "1.30.2",
   "repositories": {
     "Rocciadura/didupAPI-wrapper": {
-      "headSha": "e98a9a67f4d1770ecda271e7a981efadd4d26e20"
+      "headSha": "03be218248fd6b5125df7e5f1a52bea6cf97ce90"
     },
     "DTrombett/portaleargo-api": {
       "headSha": "df846555471f95836450c8af84e4efde11e3cb08"
