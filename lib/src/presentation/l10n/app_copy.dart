@@ -183,7 +183,8 @@ abstract final class AppCopy {
   static const String shareHomeworkBody =
       'Crea un PDF ordinato scegliendo periodo o materia.';
   static const String exportScope = 'Cosa vuoi condividere';
-  static const String exportWeek = 'Intera settimana';
+  static const String exportWeek = 'Settimana corrente';
+  static const String exportNextWeek = 'Settimana prossima';
   static const String exportWeekHint = 'Da lunedì a domenica';
   static const String exportDay = 'Giorno specifico';
   static const String exportSubject = 'Materia specifica';

@@ -1,7 +1,7 @@
 import '../agenda/homework_agenda_item.dart';
 import '../homework/school_date.dart';
 
-enum HomeworkExportScope { week, day, subject }
+enum HomeworkExportScope { week, nextWeek, day, subject }
 
 final class HomeworkExportSelection {
   const HomeworkExportSelection._({
@@ -22,6 +22,16 @@ final class HomeworkExportSelection {
         scope: HomeworkExportScope.day,
         anchorDate: day,
       );
+
+  factory HomeworkExportSelection.nextWeek(SchoolDate today) {
+    // Civil date arithmetic keeps Monday stable across daylight-saving changes.
+    final date = today.toLocalDate();
+    final monday = DateTime(date.year, date.month, date.day + 8 - date.weekday);
+    return HomeworkExportSelection._(
+      scope: HomeworkExportScope.nextWeek,
+      anchorDate: SchoolDate(monday.year, monday.month, monday.day),
+    );
+  }
 
   factory HomeworkExportSelection.subject({
     required String subjectId,
@@ -44,7 +54,8 @@ abstract final class HomeworkExportFilter {
     required HomeworkExportSelection selection,
   }) {
     final filtered = switch (selection.scope) {
-      HomeworkExportScope.week => _forWeek(homework, selection.anchorDate!),
+      HomeworkExportScope.week ||
+      HomeworkExportScope.nextWeek => _forWeek(homework, selection.anchorDate!),
       HomeworkExportScope.day => homework.where(
         (item) => item.dueOn == selection.anchorDate,
       ),

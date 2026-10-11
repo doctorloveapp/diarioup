@@ -60,7 +60,8 @@ dati dello studente nella schermata bloccata.
 
 Tocca l'icona **Condividi** nella Dashboard, poi scegli:
 
-- **Intera settimana**;
+- **Settimana corrente** (da lunedì a domenica);
+- **Settimana prossima** (dal prossimo lunedì alla domenica successiva);
 - **Giorno specifico**;
 - **Materia specifica**.
 

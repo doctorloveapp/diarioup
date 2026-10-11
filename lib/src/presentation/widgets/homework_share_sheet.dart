@@ -87,6 +87,10 @@ final class _HomeworkShareSheetState extends State<_HomeworkShareSheet> {
                         child: Text(AppCopy.exportWeek),
                       ),
                       DropdownMenuItem<HomeworkExportScope>(
+                        value: HomeworkExportScope.nextWeek,
+                        child: Text(AppCopy.exportNextWeek),
+                      ),
+                      DropdownMenuItem<HomeworkExportScope>(
                         value: HomeworkExportScope.day,
                         child: Text(AppCopy.exportDay),
                       ),
@@ -103,6 +107,15 @@ final class _HomeworkShareSheetState extends State<_HomeworkShareSheet> {
                   switch (_scope) {
                     HomeworkExportScope.week => _WeekSummary(
                       today: widget.today,
+                    ),
+                    HomeworkExportScope.nextWeek => _WeekSummary(
+                      today: HomeworkExportSelection.nextWeek(
+                        SchoolDate(
+                          widget.today.year,
+                          widget.today.month,
+                          widget.today.day,
+                        ),
+                      ).anchorDate!.toLocalDate(),
                     ),
                     HomeworkExportScope.day => ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -215,7 +228,12 @@ final class _HomeworkShareSheetState extends State<_HomeworkShareSheet> {
       _selectedDay.day,
     );
     final selection = switch (_scope) {
-      HomeworkExportScope.week => HomeworkExportSelection.week(schoolDate),
+      HomeworkExportScope.week => HomeworkExportSelection.week(
+        SchoolDate(widget.today.year, widget.today.month, widget.today.day),
+      ),
+      HomeworkExportScope.nextWeek => HomeworkExportSelection.nextWeek(
+        SchoolDate(widget.today.year, widget.today.month, widget.today.day),
+      ),
       HomeworkExportScope.day => HomeworkExportSelection.day(schoolDate),
       HomeworkExportScope.subject => _subjectSelection(),
     };

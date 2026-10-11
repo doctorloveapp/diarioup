@@ -1,4 +1,5 @@
 import 'package:diarioup/src/domain/sharing/homework_export_selection.dart';
+import 'package:diarioup/src/domain/homework/school_date.dart';
 import 'package:diarioup/src/presentation/l10n/app_copy.dart';
 import 'package:diarioup/src/presentation/widgets/homework_share_sheet.dart';
 import 'package:flutter/material.dart';
@@ -40,5 +41,16 @@ void main() {
     await tester.tap(find.text(AppCopy.sharePdf));
     await tester.pumpAndSettle();
     expect(result?.scope, HomeworkExportScope.week);
+
+    await tester.tap(find.text('Apri'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(AppCopy.exportWeek));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(AppCopy.exportNextWeek).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(AppCopy.sharePdf));
+    await tester.pumpAndSettle();
+    expect(result?.scope, HomeworkExportScope.nextWeek);
+    expect(result?.anchorDate, const SchoolDate(2026, 10, 5));
   });
 }

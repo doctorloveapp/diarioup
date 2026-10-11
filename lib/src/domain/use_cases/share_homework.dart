@@ -67,7 +67,8 @@ final class ShareHomework {
 
   String _fileName(HomeworkExportSelection selection, DateTime generatedAt) {
     return switch (selection.scope) {
-      HomeworkExportScope.week => _weekFileName(selection.anchorDate!),
+      HomeworkExportScope.week ||
+      HomeworkExportScope.nextWeek => _weekFileName(selection.anchorDate!),
       HomeworkExportScope.day =>
         'giorno_${_schoolDatePart(selection.anchorDate!)}.pdf',
       HomeworkExportScope.subject =>

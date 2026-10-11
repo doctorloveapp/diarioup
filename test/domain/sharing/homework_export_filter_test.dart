@@ -6,6 +6,59 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final monday = const SchoolDate(2026, 9, 28);
 
+  test(
+    'settimana prossima include solo il prossimo lunedi fino a domenica',
+    () async {
+      final selection = HomeworkExportSelection.nextWeek(
+        const SchoolDate(2026, 10, 6),
+      );
+      expect(selection.anchorDate, const SchoolDate(2026, 10, 12));
+      final generator = _CapturingPdfGenerator();
+      final sharer = _CapturingFileSharer();
+      await ShareHomework(
+        repository: _HomeworkRepository([
+          _homework('current', dueOn: const SchoolDate(2026, 10, 11)),
+          _homework(
+            'monday',
+            dueOn: const SchoolDate(2026, 10, 12),
+            isDone: true,
+          ),
+          _homework('sunday', dueOn: const SchoolDate(2026, 10, 18)),
+          _homework('following', dueOn: const SchoolDate(2026, 10, 19)),
+          _homework('missing'),
+        ]),
+        pdfGenerator: generator,
+        fileSharer: sharer,
+      )(profileId: 'profile-1', selection: selection);
+      expect(generator.received.map((item) => item.id), ['monday', 'sunday']);
+      expect(sharer.fileNames, ['settimana_12_10_2026_a_18_10_2026.pdf']);
+    },
+  );
+
+  test(
+    'il prossimo lunedi resta nella settimana successiva anche di lunedi e a fine anno',
+    () {
+      expect(
+        HomeworkExportSelection.nextWeek(
+          const SchoolDate(2026, 10, 12),
+        ).anchorDate,
+        const SchoolDate(2026, 10, 19),
+      );
+      expect(
+        HomeworkExportSelection.nextWeek(
+          const SchoolDate(2026, 10, 11),
+        ).anchorDate,
+        const SchoolDate(2026, 10, 12),
+      );
+      expect(
+        HomeworkExportSelection.nextWeek(
+          const SchoolDate(2026, 12, 31),
+        ).anchorDate,
+        const SchoolDate(2027, 1, 4),
+      );
+    },
+  );
+
   test('include i compiti completati nell esportazione condivisa', () {
     final homework = <HomeworkAgendaItem>[
       _homework(

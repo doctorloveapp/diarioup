@@ -5,7 +5,7 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.4.4+11**.
+Versione corrente: **1.5.0+12**.
 
 ## Installazione dell'APK
 
@@ -46,7 +46,9 @@ versione successiva, DiarioUp propone il link ufficiale senza bloccare l'avvio.
 Il controllo può essere disattivato in **Impostazioni**.
 
 Per condividere i compiti, toccare l'icona **Condividi** nella Dashboard,
-scegliere settimana, giorno o materia e confermare **Crea e condividi PDF**.
+scegliere **Settimana corrente**, **Settimana prossima**, giorno o materia e
+confermare **Crea e condividi PDF**. La settimana prossima comprende le
+scadenze dal prossimo lunedì alla domenica successiva.
 La condivisione include anche i compiti segnati come completati, perché lo stato
 della checklist è personale; le note personali restano sempre escluse. Il PDF
 mostra il giorno della settimana accanto a ogni scadenza e usa un nome file

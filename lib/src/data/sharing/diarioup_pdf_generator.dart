@@ -201,7 +201,8 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
       HomeworkExportScope.day => 'Giorno ${_formatDate(selection.anchorDate!)}',
       HomeworkExportScope.subject =>
         'Materia ${_clean(selection.subjectName) ?? 'selezionata'}',
-      HomeworkExportScope.week => _weekLabel(selection.anchorDate!),
+      HomeworkExportScope.week ||
+      HomeworkExportScope.nextWeek => _weekLabel(selection.anchorDate!),
     };
   }
 
