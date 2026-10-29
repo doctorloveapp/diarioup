@@ -178,15 +178,16 @@ final class _DetailContent extends StatelessWidget {
         DiarioUpSpacing.xl,
       ),
       children: <Widget>[
-        Row(
+        Wrap(
+          spacing: DiarioUpSpacing.sm,
+          runSpacing: DiarioUpSpacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            Expanded(
-              child: Text(
-                item.subjectName ?? AppCopy.noSubject,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: color),
-              ),
+            Text(
+              item.subjectName ?? AppCopy.noSubject,
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: color),
             ),
             Chip(label: Text(homeworkCountdown(item.dueOn))),
           ],

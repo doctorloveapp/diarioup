@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
@@ -131,6 +132,21 @@ final class DioDidupAuthService implements DidupAuthService {
     AuthCredentials credentials,
     _PkceAttempt attempt,
   ) async {
+    // A separate, memory-only jar belongs to this attempt. Cookies from SSO
+    // responses must be collected too, without crossing host/path boundaries.
+    final cookies = CookieJar();
+    try {
+      return await _followAuthorizationRedirects(credentials, attempt, cookies);
+    } finally {
+      await cookies.deleteAll();
+    }
+  }
+
+  Future<String> _followAuthorizationRedirects(
+    AuthCredentials credentials,
+    _PkceAttempt attempt,
+    CookieJar cookies,
+  ) async {
     final authorizeUri = _config.oauthAuthorizeUri.replace(
       queryParameters: <String, String>{
         'redirect_uri': _config.redirectUri.toString(),
@@ -144,21 +160,17 @@ final class DioDidupAuthService implements DidupAuthService {
         'code_challenge_method': 'S256',
       },
     );
-    final start = await _oauthDio.getUri<Object?>(
-      authorizeUri,
-      options: Options(responseType: ResponseType.plain),
-    );
-    final oauthCookies = <String>[];
-    _collectResponseCookies(start, oauthCookies);
-    await _network.clearTransientCookies();
+    final start = await _oauthRequest('GET', authorizeUri, cookies);
     final challengeLocation = _redirectLocation(start, stage: 'Avvio OAuth');
     final loginChallenge = challengeLocation.queryParameters['login_challenge'];
     if (loginChallenge == null || loginChallenge.isEmpty) {
       throw const AuthenticationFailure('Challenge di login mancante.');
     }
 
-    final login = await _oauthDio.postUri<Object?>(
+    final login = await _oauthRequest(
+      'POST',
       _config.ssoLoginUri,
+      cookies,
       data: _encodeForm(<String, String>{
         'challenge': loginChallenge,
         'client_id': _config.oauthClientId,
@@ -168,20 +180,16 @@ final class DioDidupAuthService implements DidupAuthService {
         'password': credentials.password,
         'login': 'true',
       }),
-      options: Options(
-        contentType: Headers.formUrlEncodedContentType,
-        responseType: ResponseType.plain,
-      ),
     );
     if (login.statusCode == 401 || login.statusCode == 403) {
       throw const AuthenticationFailure(
         'Argo non ha accettato le credenziali inserite.',
       );
     }
-    await _network.clearTransientCookies();
-
     var location = _redirectLocation(login, stage: 'Login SSO');
-    for (var redirects = 0; redirects < 6; redirects++) {
+    // Inspect the callback after the last allowed hop as well: ten network
+    // redirects are supported, but an eleventh request is never sent.
+    for (var redirects = 0; redirects <= 10; redirects++) {
       if (_config.isRedirectCallback(location)) {
         final returnedState = location.queryParameters['state'];
         final code = location.queryParameters['code'];
@@ -193,29 +201,67 @@ final class DioDidupAuthService implements DidupAuthService {
       if (!_config.isTrustedNetworkUri(location)) {
         throw const CompatibilityFailure('Redirect OAuth non ammesso.');
       }
-      // Il flusso SSO Argo attraversa i due host autorizzati e richiede i
-      // cookie raccolti al primo e al terzo passaggio, indipendentemente dal
-      // dominio che li ha emessi. Il cookie jar resta comunque effimero.
-      final sendsOauthCookies = redirects == 0 || redirects >= 2;
-      final response = await _oauthDio.getUri<Object?>(
-        location,
-        options: sendsOauthCookies && oauthCookies.isNotEmpty
-            ? Options(
-                headers: <String, Object>{'cookie': oauthCookies.join('; ')},
-                responseType: ResponseType.plain,
-              )
-            : Options(responseType: ResponseType.plain),
-      );
-      if (redirects == 0) {
-        _collectResponseCookies(response, oauthCookies);
-      }
-      await _network.clearTransientCookies();
+      if (redirects == 10) break;
+      final response = await _oauthRequest('GET', location, cookies);
       location = _redirectLocation(
         response,
         stage: 'Redirect OAuth ${redirects + 1}',
       );
     }
     throw const AuthenticationFailure('Troppi redirect durante il login.');
+  }
+
+  Future<Response<Object?>> _oauthRequest(
+    String method,
+    Uri uri,
+    CookieJar cookies, {
+    String? data,
+  }) async {
+    if (!_config.isTrustedNetworkUri(uri)) {
+      throw const CompatibilityFailure('Destinazione OAuth non ammessa.');
+    }
+    final outgoing = await cookies.loadForRequest(uri);
+    final response = await _oauthDio.requestUri<Object?>(
+      uri,
+      data: data,
+      options: Options(
+        method: method,
+        contentType: data == null ? null : Headers.formUrlEncodedContentType,
+        responseType: ResponseType.plain,
+        headers: <String, Object>{
+          if (outgoing.isNotEmpty)
+            'cookie': outgoing
+                .map((cookie) => '${cookie.name}=${cookie.value}')
+                .join('; '),
+        },
+      ),
+    );
+    final received = <Cookie>[];
+    for (final header
+        in response.headers.map['set-cookie'] ?? const <String>[]) {
+      try {
+        final cookie = Cookie.fromSetCookieValue(header);
+        final domain = cookie.domain?.toLowerCase().replaceFirst(
+          RegExp(r'^\.'),
+          '',
+        );
+        // A response cannot plant a cookie for another host or a top-level
+        // domain. Host-only cookies keep their scope in CookieJar.
+        if (domain != null) {
+          if (!domain.contains('.') ||
+              (uri.host != domain && !uri.host.endsWith('.$domain'))) {
+            continue;
+          }
+          cookie.domain = domain;
+        }
+        received.add(cookie);
+      } on FormatException {
+        // Invalid Set-Cookie is ignored, as in a browser. Never log its value.
+        continue;
+      }
+    }
+    await cookies.saveFromResponse(uri, received);
+    return response;
   }
 
   Future<_OAuthToken> _exchangeCode(
@@ -352,7 +398,9 @@ final class DioDidupAuthService implements DidupAuthService {
 
   Uri _redirectLocation(Response<Object?> response, {required String stage}) {
     final raw = response.headers.value('location');
-    if (raw == null || raw.isEmpty) {
+    if (!const <int>[301, 302, 303, 307, 308].contains(response.statusCode) ||
+        raw == null ||
+        raw.isEmpty) {
       final status = response.statusCode?.toString() ?? 'sconosciuto';
       throw CompatibilityFailure('$stage senza redirect (HTTP $status).');
     }
@@ -367,17 +415,6 @@ final class DioDidupAuthService implements DidupAuthService {
       (int _) => alphabet[_random.nextInt(alphabet.length)],
       growable: false,
     ).join();
-  }
-}
-
-void _collectResponseCookies(
-  Response<Object?> response,
-  List<String> destination,
-) {
-  final headers = response.headers.map['set-cookie'] ?? const <String>[];
-  for (final header in headers) {
-    final pair = header.split(';').first.trim();
-    if (pair.indexOf('=') > 0) destination.add(pair);
   }
 }
 

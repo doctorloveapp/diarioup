@@ -5,7 +5,10 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.5.0+12**.
+Versione corrente: **1.6.0+13**.
+
+Il login SSO gestisce i cookie temporanei per host/dominio e segue fino a dieci
+redirect, inclusi quelli relativi, per supportare il flusso del portale aggiornato.
 
 ## Installazione dell'APK
 

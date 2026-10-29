@@ -156,6 +156,95 @@ void main() {
     },
   );
 
+  test('raccoglie i cookie SSO e li invia solo al dominio corretto', () async {
+    final network = DidupNetworkClient.create(
+      config: testProtocolConfig(),
+      dio: Dio()..httpClientAdapter = _browserSsoAdapter(),
+    );
+    final result = await DioDidupAuthService(
+      networkClient: network,
+    ).login(_syntheticCredentials());
+    expect(result.profiles.single.sourceProfileId, 'profile-1');
+    expect(
+      await network.cookieJar.loadForRequest(network.config.ssoLoginUri),
+      isEmpty,
+    );
+  });
+
+  test('accetta redirect relativi e fino a dieci passaggi OAuth', () async {
+    final network = DidupNetworkClient.create(
+      config: testProtocolConfig(),
+      dio: Dio()..httpClientAdapter = _browserSsoAdapter(extraRedirects: 7),
+    );
+    final result = await DioDidupAuthService(
+      networkClient: network,
+    ).login(_syntheticCredentials());
+    expect(result.profiles, hasLength(1));
+  });
+
+  test('interrompe un loop OAuth senza scambiare il codice', () async {
+    final adapter = _browserSsoAdapter(extraRedirects: 8);
+    final network = DidupNetworkClient.create(
+      config: testProtocolConfig(),
+      dio: Dio()..httpClientAdapter = adapter,
+    );
+    await expectLater(
+      DioDidupAuthService(
+        networkClient: network,
+      ).login(_syntheticCredentials()),
+      throwsA(isA<AuthenticationFailure>()),
+    );
+    expect(
+      adapter.requests.where((request) => request.uri.path == '/oauth2/token'),
+      isEmpty,
+    );
+    expect(adapter.requests, hasLength(12));
+  });
+
+  test('rifiuta redirect esterni senza inviare cookie o credenziali', () async {
+    final adapter = _browserSsoAdapter(untrustedRedirect: true);
+    final network = DidupNetworkClient.create(
+      config: testProtocolConfig(),
+      dio: Dio()..httpClientAdapter = adapter,
+    );
+    await expectLater(
+      DioDidupAuthService(
+        networkClient: network,
+      ).login(_syntheticCredentials()),
+      throwsA(isA<CompatibilityFailure>()),
+    );
+    expect(adapter.requests, hasLength(2));
+    expect(
+      adapter.requests.every(
+        (request) => network.config.isTrustedNetworkUri(request.uri),
+      ),
+      isTrue,
+    );
+  });
+
+  test('rifiuta un callback OAuth con state diverso', () async {
+    final network = DidupNetworkClient.create(
+      config: testProtocolConfig(),
+      dio: Dio()..httpClientAdapter = _browserSsoAdapter(invalidState: true),
+    );
+    await expectLater(
+      DioDidupAuthService(
+        networkClient: network,
+      ).login(_syntheticCredentials()),
+      throwsA(isA<AuthenticationFailure>()),
+    );
+  });
+
+  test('un nuovo tentativo non riusa cookie OAuth precedenti', () async {
+    final network = DidupNetworkClient.create(
+      config: testProtocolConfig(),
+      dio: Dio()..httpClientAdapter = _browserSsoAdapter(),
+    );
+    final auth = DioDidupAuthService(networkClient: network);
+    await auth.login(_syntheticCredentials());
+    await auth.login(_syntheticCredentials());
+  });
+
   test('credenziali rifiutate da Argo non producono una sessione', () async {
     final config = testProtocolConfig();
     final adapter = ScriptedAdapter((RequestOptions request) {
@@ -215,4 +304,114 @@ void main() {
       );
     },
   );
+}
+
+AuthCredentials _syntheticCredentials() => AuthCredentials(
+  schoolCode: 'TEST0000',
+  username: 'synthetic-user',
+  password: 'synthetic-password',
+);
+
+ScriptedAdapter _browserSsoAdapter({
+  int extraRedirects = 0,
+  bool untrustedRedirect = false,
+  bool invalidState = false,
+}) {
+  final config = testProtocolConfig();
+  String? state;
+  return ScriptedAdapter((request) {
+    final cookies = request.headers['cookie']?.toString() ?? '';
+    if (request.uri.path == '/oauth2/auth') {
+      expect(cookies, isEmpty);
+      state = request.uri.queryParameters['state'];
+      return redirectResponse(
+        '${config.ssoLoginUri}?login_challenge=synthetic-challenge',
+        cookies: ['oauth_csrf=old; Path=/; Secure; HttpOnly'],
+      );
+    }
+    if (request.uri.path == '/auth/sso/login') {
+      expect(cookies, isEmpty);
+      return redirectResponse(
+        untrustedRedirect
+            ? 'https://untrusted.invalid/oauth'
+            : '${config.oauthAuthorizeUri.origin}/oauth2/continue',
+        cookies: [
+          'sso_session=initial; Path=/auth/sso; Secure; HttpOnly',
+          'shared=ok; Domain=.portaleargo.it; Path=/; Secure',
+          'wrong_host=bad; Domain=auth.portaleargo.it; Path=/',
+          'wrong_path=bad; Path=/unrelated',
+        ],
+      );
+    }
+    if (request.uri.path == '/oauth2/continue') {
+      expect(cookies, contains('oauth_csrf=old'));
+      expect(cookies, contains('shared=ok'));
+      expect(cookies, isNot(contains('sso_session')));
+      expect(cookies, isNot(contains('wrong_')));
+      return redirectResponse(
+        '${config.ssoLoginUri.origin}/auth/sso/consent',
+        cookies: ['oauth_csrf=updated; Path=/; Secure'],
+      );
+    }
+    if (request.uri.path == '/auth/sso/consent') {
+      expect(cookies, contains('sso_session=initial'));
+      expect(cookies, contains('shared=ok'));
+      expect(cookies, isNot(contains('oauth_csrf')));
+      expect(cookies, isNot(contains('wrong_')));
+      return redirectResponse(
+        extraRedirects == 0
+            ? '${config.oauthAuthorizeUri.origin}/oauth2/final'
+            : '/auth/sso/extra/1',
+        cookies: ['sso_session=rotated; Path=/auth/sso; Secure'],
+      );
+    }
+    if (request.uri.path.startsWith('/auth/sso/extra/')) {
+      expect(cookies, contains('sso_session=rotated'));
+      expect(cookies, isNot(contains('sso_session=initial')));
+      final index = int.parse(request.uri.pathSegments.last);
+      return redirectResponse(
+        index < extraRedirects
+            ? '/auth/sso/extra/${index + 1}'
+            : '${config.oauthAuthorizeUri.origin}/oauth2/final',
+      );
+    }
+    if (request.uri.path == '/oauth2/final') {
+      expect(cookies, contains('oauth_csrf=updated'));
+      expect(cookies, isNot(contains('oauth_csrf=old')));
+      expect(cookies, isNot(contains('sso_session')));
+      return redirectResponse(
+        '${config.redirectUri}?code=synthetic-code&state=${invalidState ? 'mismatch' : state}',
+      );
+    }
+    if (request.uri.path == '/oauth2/token') {
+      expect(cookies, isEmpty);
+      return jsonResponse(200, {
+        'access_token': 'synthetic-access',
+        'expires_in': 900,
+      });
+    }
+    if (request.uri.path.endsWith('/login')) {
+      return jsonResponse(200, {
+        'success': true,
+        'data': [
+          {
+            'token': 'synthetic-app',
+            'codMin': 'TEST0000',
+            'opzioni': <Object?>[],
+          },
+        ],
+      });
+    }
+    if (request.uri.path.endsWith('/profilo')) {
+      return jsonResponse(200, {
+        'success': true,
+        'data': {
+          'scheda': {'pk': 'profile-1'},
+          'alunno': {'nominativo': 'Profilo sintetico'},
+          'anno': {'anno': '2026/2027'},
+        },
+      });
+    }
+    fail('Richiesta inattesa nel test OAuth.');
+  });
 }
