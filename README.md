@@ -73,6 +73,13 @@ dei compiti. Prima di allegare uno screenshot, oscurare ogni dato personale.
 
 ## Sviluppo e verifiche
 
+Il Watchdog esclude esclusivamente gli aggiornamenti dell'issue
+`Rocciadura/didupAPI-wrapper#3`, già affrontata nella release `1.6.0+13`.
+L'esclusione è dichiarata in `IGNORED_ISSUES` in `scripts/monitor_didup.py`:
+le altre issue, anche quelle con numero 3 in repository diversi, i cambiamenti
+ai file e le nuove versioni DidUP restano monitorati. Per riprendere gli avvisi
+di quell'issue, rimuovere la sua coppia repository/numero dall'elenco.
+
 Il progetto segue `Presentation → Domain ← Data`; Drift cifrato è la single
 source of truth. Per la verifica locale:
 

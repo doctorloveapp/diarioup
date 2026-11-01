@@ -37,6 +37,13 @@ DEFAULT_BASELINE = Path(__file__).with_name("baseline.json")
 DEFAULT_TIMEOUT_SECONDS = 20
 USER_AGENT = "DiarioUp-DidUP-Monitor/1.0"
 
+# Explicitly acknowledged issues, keyed by repository AND issue number.
+# #3 was addressed in DiarioUp 1.6.0+13 (docs/audit_didup_2026_10_29.md).
+# Ignore all future updates to this issue only; source-file changes still alert.
+IGNORED_ISSUES: frozenset[tuple[str, int]] = frozenset({
+    ("Rocciadura/didupAPI-wrapper", 3),
+})
+
 
 class Severity(IntEnum):
     INFO = 1
@@ -359,6 +366,8 @@ def check_repository(
         )
 
     for issue in fetch_changed_issues(client, rule.slug, checked_at):
+        if (rule.slug, issue.get("number")) in IGNORED_ISSUES:
+            continue
         severity = issue_severity(issue)
         if severity < Severity.HIGH:
             continue

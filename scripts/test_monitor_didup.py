@@ -28,6 +28,76 @@ class FakeClient:
 
 
 class MonitorDidupTest(unittest.TestCase):
+    def _repository_findings(self, rule, issues, files=()):
+        repository_url = f"/repos/{rule.slug}"
+        client = FakeClient({
+            f"{repository_url}/commits/main": {"sha": "new-head"},
+            f"{repository_url}/compare/old-head...new-head": {
+                "status": "ahead",
+                "files": [{"filename": path} for path in files],
+            },
+            f"{repository_url}/issues?": issues,
+            repository_url: {"default_branch": "main"},
+        })
+        findings, _ = monitor.check_repository(
+            client,
+            rule,
+            {rule.slug: {"headSha": "old-head"}},
+            "2026-10-29T12:18:25Z",
+        )
+        return findings
+
+    def test_acknowledged_issue_updates_do_not_generate_email(self):
+        for state in ("open", "closed"):
+            with self.subTest(state=state):
+                findings = self._repository_findings(monitor.REPOSITORIES[0], [{
+                    "number": 3,
+                    "title": "problema autenticazione",
+                    "body": "Login OAuth e redirect aggiornati",
+                    "state": state,
+                    "updated_at": "2026-11-01T12:00:00Z",
+                }])
+                self.assertEqual(findings, [])
+                self.assertEqual(
+                    monitor.build_email_body(findings, "2026-11-01T12:16:35Z"),
+                    "",
+                )
+
+    def test_other_issues_in_same_repository_still_alert(self):
+        findings = self._repository_findings(monitor.REPOSITORIES[0], [
+            {"number": 3, "title": "Login OAuth non funzionante"},
+            {"number": 4, "title": "Login OAuth non funzionante"},
+        ])
+        self.assertEqual(len(findings), 1)
+        self.assertTrue(findings[0].title.startswith("Issue #4:"))
+        self.assertEqual(findings[0].severity, monitor.Severity.CRITICAL)
+
+    def test_issue_three_in_other_repositories_still_alerts(self):
+        for rule in monitor.REPOSITORIES[1:]:
+            with self.subTest(repository=rule.slug):
+                findings = self._repository_findings(rule, [
+                    {"number": 3, "title": "Login OAuth non funzionante"},
+                ])
+                self.assertEqual(len(findings), 1)
+                self.assertEqual(findings[0].source, rule.slug)
+                self.assertTrue(findings[0].title.startswith("Issue #3:"))
+
+    def test_ignored_issue_does_not_silence_source_file_alerts(self):
+        findings = self._repository_findings(
+            monitor.REPOSITORIES[0],
+            [{"number": 3, "title": "Login OAuth non funzionante"}],
+            files=("didupwrapper/auth.py", "didupwrapper/models.py"),
+        )
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(
+            [finding.severity for finding in findings],
+            [monitor.Severity.CRITICAL, monitor.Severity.HIGH],
+        )
+        body = monitor.build_email_body(findings, "2026-11-01T12:16:35Z")
+        self.assertIn("didupwrapper/auth.py", body)
+        self.assertIn("didupwrapper/models.py", body)
+        self.assertNotIn("Issue #3:", body)
+
     def test_issue_login_is_critical(self):
         issue = {
             "title": "Login non funzionante",
