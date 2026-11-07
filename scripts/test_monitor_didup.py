@@ -118,6 +118,10 @@ class MonitorDidupTest(unittest.TestCase):
     def test_repository_paths_have_expected_priority(self):
         rule = monitor.REPOSITORIES[0]
         self.assertEqual(
+            monitor.path_severity("tests/test_auth.py", rule),
+            monitor.Severity.HIGH,
+        )
+        self.assertEqual(
             monitor.path_severity("didupwrapper/auth.py", rule),
             monitor.Severity.CRITICAL,
         )

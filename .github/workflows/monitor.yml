@@ -20,7 +20,12 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Run Monitor
+      - name: Test watchdog rules
+        # Validate exclusions and severity rules before sending any report.
+        # SMTP secrets are only exposed to the subsequent monitoring step.
+        run: python -m unittest scripts.test_monitor_didup
+
+      - name: Run Monitor and send alerts
         env:
           GITHUB_TOKEN: ${{ github.token }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}

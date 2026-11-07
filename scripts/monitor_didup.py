@@ -38,7 +38,7 @@ DEFAULT_TIMEOUT_SECONDS = 20
 USER_AGENT = "DiarioUp-DidUP-Monitor/1.0"
 
 # Explicitly acknowledged issues, keyed by repository AND issue number.
-# #3 was addressed in DiarioUp 1.6.0+13 (docs/audit_didup_2026_10_29.md).
+# #3 was addressed in DiarioUp 1.6.0+13 and 1.6.1+14 (docs/audit_didup_2026_11_07.md).
 # Ignore all future updates to this issue only; source-file changes still alert.
 IGNORED_ISSUES: frozenset[tuple[str, int]] = frozenset({
     ("Rocciadura/didupAPI-wrapper", 3),
@@ -87,6 +87,7 @@ REPOSITORIES: tuple[RepositoryRule, ...] = (
             "didupwrapper/models.py",
             "didupwrapper/exceptions.py",
             "tests/test_client.py",
+            "tests/test_auth.py",
             "tests/test_models.py",
         ),
     ),

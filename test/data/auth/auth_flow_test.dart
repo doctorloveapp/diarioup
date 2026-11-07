@@ -171,10 +171,10 @@ void main() {
     );
   });
 
-  test('accetta redirect relativi e fino a dieci passaggi OAuth', () async {
+  test('accetta redirect relativi e fino a quindici passaggi OAuth', () async {
     final network = DidupNetworkClient.create(
       config: testProtocolConfig(),
-      dio: Dio()..httpClientAdapter = _browserSsoAdapter(extraRedirects: 7),
+      dio: Dio()..httpClientAdapter = _browserSsoAdapter(extraRedirects: 12),
     );
     final result = await DioDidupAuthService(
       networkClient: network,
@@ -183,7 +183,7 @@ void main() {
   });
 
   test('interrompe un loop OAuth senza scambiare il codice', () async {
-    final adapter = _browserSsoAdapter(extraRedirects: 8);
+    final adapter = _browserSsoAdapter(extraRedirects: 13);
     final network = DidupNetworkClient.create(
       config: testProtocolConfig(),
       dio: Dio()..httpClientAdapter = adapter,
@@ -198,7 +198,7 @@ void main() {
       adapter.requests.where((request) => request.uri.path == '/oauth2/token'),
       isEmpty,
     );
-    expect(adapter.requests, hasLength(12));
+    expect(adapter.requests, hasLength(17));
   });
 
   test('rifiuta redirect esterni senza inviare cookie o credenziali', () async {
@@ -275,6 +275,102 @@ void main() {
     expect(adapter.requests, hasLength(2));
   });
 
+  test('completa il login quando il consenso risponde HTML 200', () async {
+    final adapter = _browserSsoAdapter(
+      consentHtml: '''
+      <form action="/auth/sso/consent" method="post">
+        <input name="challenge" value="c1" type="hidden">
+        <input name="_csrf" value="csrf&amp;test" type="hidden">
+        <input name="grant_scope" value="openid" type="checkbox" checked>
+        <input name="grant_scope" value="argo" type="checkbox">
+        <button name="submit" value="deny">Rifiuta</button>
+        <button name="submit" value="accept">Accetta</button>
+      </form>
+    ''',
+    );
+    final network = DidupNetworkClient.create(
+      config: testProtocolConfig(),
+      dio: Dio()..httpClientAdapter = adapter,
+    );
+    final result = await DioDidupAuthService(
+      networkClient: network,
+    ).login(_syntheticCredentials());
+    expect(result.profiles, hasLength(1));
+    final consent = adapter.requests.singleWhere(
+      (request) =>
+          request.uri.path == '/auth/sso/consent' && request.method == 'POST',
+    );
+    final fields = Uri(query: consent.data! as String).queryParametersAll;
+    expect(fields['_csrf'], ['csrf&test']);
+    expect(fields['grant_scope'], ['openid', 'argo']);
+    expect(fields['submit'], ['accept']);
+    expect(consent.headers['cookie'], contains('consent_session=html-cookie'));
+    expect(
+      consent.headers['content-type'],
+      startsWith('application/x-www-form-urlencoded'),
+    );
+  });
+
+  test(
+    'mantiene controllo state anche per callback incorporato in HTML',
+    () async {
+      final config = testProtocolConfig();
+      final adapter = _browserSsoAdapter(
+        consentHtml:
+            '<a href="${config.redirectUri}?code=test&amp;state=wrong">Continua</a>',
+      );
+      final network = DidupNetworkClient.create(
+        config: config,
+        dio: Dio()..httpClientAdapter = adapter,
+      );
+      await expectLater(
+        DioDidupAuthService(
+          networkClient: network,
+        ).login(_syntheticCredentials()),
+        throwsA(isA<AuthenticationFailure>()),
+      );
+      expect(
+        adapter.requests.where(
+          (request) => request.uri.path == '/oauth2/token',
+        ),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'un errore OAuth finale non espone descrizione o dati della pagina',
+    () async {
+      final config = testProtocolConfig();
+      final adapter = _browserSsoAdapter(
+        consentHtml:
+            '<a href="${config.redirectUri}?error=access_denied&amp;error_description=private-test">Continua</a>',
+      );
+      final network = DidupNetworkClient.create(
+        config: config,
+        dio: Dio()..httpClientAdapter = adapter,
+      );
+      await expectLater(
+        DioDidupAuthService(
+          networkClient: network,
+        ).login(_syntheticCredentials()),
+        throwsA(
+          isA<AuthenticationFailure>().having(
+            (failure) => failure.message,
+            'message',
+            isNot(contains('private-test')),
+          ),
+        ),
+      );
+      expect(
+        adapter.requests.where(
+          (request) => request.uri.path == '/oauth2/token',
+        ),
+        isEmpty,
+      );
+    },
+  );
+
   test(
     'un redirect mancante identifica lo stadio senza dati sensibili',
     () async {
@@ -316,6 +412,7 @@ ScriptedAdapter _browserSsoAdapter({
   int extraRedirects = 0,
   bool untrustedRedirect = false,
   bool invalidState = false,
+  String? consentHtml,
 }) {
   final config = testProtocolConfig();
   String? state;
@@ -358,6 +455,18 @@ ScriptedAdapter _browserSsoAdapter({
       expect(cookies, contains('shared=ok'));
       expect(cookies, isNot(contains('oauth_csrf')));
       expect(cookies, isNot(contains('wrong_')));
+      if (consentHtml != null && request.method == 'GET') {
+        return ResponseBody.fromString(
+          consentHtml,
+          200,
+          headers: {
+            'content-type': ['text/html'],
+            'set-cookie': [
+              'consent_session=html-cookie; Path=/auth/sso; Secure',
+            ],
+          },
+        );
+      }
       return redirectResponse(
         extraRedirects == 0
             ? '${config.oauthAuthorizeUri.origin}/oauth2/final'

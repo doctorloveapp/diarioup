@@ -5,10 +5,12 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.6.0+13**.
+Versione corrente: **1.6.1+14**.
 
-Il login SSO gestisce i cookie temporanei per host/dominio e segue fino a dieci
-redirect, inclusi quelli relativi, per supportare il flusso del portale aggiornato.
+Il login SSO gestisce cookie temporanei per host/dominio e fino a quindici
+passaggi, incluse le pagine HTML di consenso e i redirect relativi del portale.
+Le pagine vengono interpretate senza eseguire JavaScript; il consenso resta
+limitato al portale autorizzato e agli scope già richiesti.
 
 ## Installazione dell'APK
 
@@ -74,7 +76,7 @@ dei compiti. Prima di allegare uno screenshot, oscurare ogni dato personale.
 ## Sviluppo e verifiche
 
 Il Watchdog esclude esclusivamente gli aggiornamenti dell'issue
-`Rocciadura/didupAPI-wrapper#3`, già affrontata nella release `1.6.0+13`.
+`Rocciadura/didupAPI-wrapper#3`, affrontata nelle release `1.6.0+13` e `1.6.1+14`.
 L'esclusione è dichiarata in `IGNORED_ISSUES` in `scripts/monitor_didup.py`:
 le altre issue, anche quelle con numero 3 in repository diversi, i cambiamenti
 ai file e le nuove versioni DidUP restano monitorati. Per riprendere gli avvisi

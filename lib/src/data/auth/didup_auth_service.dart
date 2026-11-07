@@ -11,6 +11,7 @@ import '../../domain/auth/student_profile.dart';
 import '../../domain/errors/didup_failure.dart';
 import '../network/didup_network_client.dart';
 import '../protocol/didup_protocol_config.dart';
+import 'oauth_html_navigator.dart';
 import 'session.dart';
 
 final class RemoteLoginResult {
@@ -186,11 +187,16 @@ final class DioDidupAuthService implements DidupAuthService {
         'Argo non ha accettato le credenziali inserite.',
       );
     }
-    var location = _redirectLocation(login, stage: 'Login SSO');
-    // Inspect the callback after the last allowed hop as well: ten network
-    // redirects are supported, but an eleventh request is never sent.
-    for (var redirects = 0; redirects <= 10; redirects++) {
+    var step = OAuthPageStep(uri: _redirectLocation(login, stage: 'Login SSO'));
+    // HTML consent submissions also count toward the bounded SSO chain.
+    for (var redirects = 0; redirects <= 15; redirects++) {
+      final location = step.uri;
       if (_config.isRedirectCallback(location)) {
+        if (location.queryParameters.containsKey('error')) {
+          throw const AuthenticationFailure(
+            'Argo non ha autorizzato l’accesso.',
+          );
+        }
         final returnedState = location.queryParameters['state'];
         final code = location.queryParameters['code'];
         if (returnedState != attempt.state || code == null || code.isEmpty) {
@@ -201,12 +207,35 @@ final class DioDidupAuthService implements DidupAuthService {
       if (!_config.isTrustedNetworkUri(location)) {
         throw const CompatibilityFailure('Redirect OAuth non ammesso.');
       }
-      if (redirects == 10) break;
-      final response = await _oauthRequest('GET', location, cookies);
-      location = _redirectLocation(
-        response,
-        stage: 'Redirect OAuth ${redirects + 1}',
+      if (redirects == 15) break;
+      final response = await _oauthRequest(
+        step.method,
+        location,
+        cookies,
+        data: step.body,
       );
+      final status = response.statusCode;
+      if (const <int>[301, 302, 303, 307, 308].contains(status)) {
+        step = OAuthPageStep(
+          uri: _redirectLocation(
+            response,
+            stage: 'Redirect OAuth ${redirects + 1}',
+          ),
+        );
+        continue;
+      }
+      final body = response.data;
+      final next = status == 200 && body is String
+          ? OAuthHtmlNavigator(_config).nextStep(body, location)
+          : null;
+      if (next == null) {
+        // Never include HTML titles, URLs, OAuth errors or page contents:
+        // any of these may contain student data or credentials.
+        throw CompatibilityFailure(
+          'Passaggio OAuth ${redirects + 1} non supportato (HTTP $status).',
+        );
+      }
+      step = next;
     }
     throw const AuthenticationFailure('Troppi redirect durante il login.');
   }
