@@ -7,8 +7,7 @@ final class HomeworkExportSelection {
   const HomeworkExportSelection._({
     required this.scope,
     this.anchorDate,
-    this.subjectId,
-    this.subjectName,
+    this.subjectsById = const <String, String>{},
   });
 
   factory HomeworkExportSelection.week(SchoolDate anchorDate) =>
@@ -36,16 +35,28 @@ final class HomeworkExportSelection {
   factory HomeworkExportSelection.subject({
     required String subjectId,
     required String subjectName,
-  }) => HomeworkExportSelection._(
-    scope: HomeworkExportScope.subject,
-    subjectId: subjectId,
-    subjectName: subjectName,
-  );
+  }) => HomeworkExportSelection.subjects({subjectId: subjectName});
+
+  factory HomeworkExportSelection.subjects(Map<String, String> subjects) {
+    if (subjects.isEmpty ||
+        subjects.entries.any(
+          (entry) => entry.key.trim().isEmpty || entry.value.trim().isEmpty,
+        )) {
+      throw ArgumentError('Selezionare almeno una materia valida.');
+    }
+    return HomeworkExportSelection._(
+      scope: HomeworkExportScope.subject,
+      subjectsById: Map<String, String>.unmodifiable(subjects),
+    );
+  }
 
   final HomeworkExportScope scope;
   final SchoolDate? anchorDate;
-  final String? subjectId;
-  final String? subjectName;
+  final Map<String, String> subjectsById;
+  String? get subjectId =>
+      subjectsById.length == 1 ? subjectsById.keys.single : null;
+  String? get subjectName =>
+      subjectsById.length == 1 ? subjectsById.values.single : null;
 }
 
 abstract final class HomeworkExportFilter {
@@ -60,10 +71,26 @@ abstract final class HomeworkExportFilter {
         (item) => item.dueOn == selection.anchorDate,
       ),
       HomeworkExportScope.subject => homework.where(
-        (item) => item.subjectId == selection.subjectId,
+        // Subject exports deliberately have no date window, including overdue
+        // and undated items. Completion is personal and excluded in this mode.
+        (item) =>
+            !item.isDone && selection.subjectsById.containsKey(item.subjectId),
       ),
     };
-    final result = filtered.toList(growable: false)..sort(_compareHomework);
+    final result = filtered.toList(growable: false)
+      ..sort((first, second) {
+        if (selection.scope == HomeworkExportScope.subject) {
+          final firstName = selection.subjectsById[first.subjectId]!;
+          final secondName = selection.subjectsById[second.subjectId]!;
+          final bySubject = firstName.toLowerCase().compareTo(
+            secondName.toLowerCase(),
+          );
+          if (bySubject != 0) return bySubject;
+          final byId = first.subjectId!.compareTo(second.subjectId!);
+          if (byId != 0) return byId;
+        }
+        return _compareHomework(first, second);
+      });
     return List<HomeworkAgendaItem>.unmodifiable(result);
   }
 

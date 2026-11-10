@@ -37,7 +37,7 @@ final class _HomeworkShareSheet extends StatefulWidget {
 final class _HomeworkShareSheetState extends State<_HomeworkShareSheet> {
   HomeworkExportScope _scope = HomeworkExportScope.week;
   late DateTime _selectedDay = widget.today;
-  String? _selectedSubjectId;
+  final _selectedSubjectIds = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -129,30 +129,62 @@ final class _HomeworkShareSheetState extends State<_HomeworkShareSheet> {
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: _pickDay,
                     ),
-                    HomeworkExportScope.subject =>
-                      DropdownButtonFormField<String>(
-                        initialValue: _selectedSubjectId,
-                        decoration: const InputDecoration(
-                          labelText: AppCopy.selectSubject,
-                          prefixIcon: Icon(Icons.menu_book_rounded),
+                    HomeworkExportScope.subject => Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          AppCopy.selectSubjects,
+                          style: theme.textTheme.titleMedium,
                         ),
-                        isExpanded: true,
-                        items: widget.subjects
-                            .map(
-                              (subject) => DropdownMenuItem<String>(
-                                value: subject.id,
-                                child: Text(
-                                  subject.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                        const SizedBox(height: DiarioUpSpacing.xs),
+                        const Text(AppCopy.exportSubjectsHint),
+                        if (widget.subjects.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: DiarioUpSpacing.md,
+                            ),
+                            child: Text(AppCopy.exportNoSubjects),
+                          )
+                        else ...[
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => setState(() {
+                                if (_allSubjectsSelected) {
+                                  _selectedSubjectIds.clear();
+                                } else {
+                                  _selectedSubjectIds.addAll(
+                                    widget.subjects.map(
+                                      (subject) => subject.id,
+                                    ),
+                                  );
+                                }
+                              }),
+                              child: Text(
+                                _allSubjectsSelected
+                                    ? AppCopy.deselectAllSubjects
+                                    : AppCopy.selectAllSubjects,
                               ),
-                            )
-                            .toList(growable: false),
-                        onChanged: (subjectId) {
-                          setState(() => _selectedSubjectId = subjectId);
-                        },
-                      ),
+                            ),
+                          ),
+                          for (final subject in widget.subjects)
+                            CheckboxListTile(
+                              key: ValueKey('export-subject-${subject.id}'),
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              title: Text(subject.name),
+                              value: _selectedSubjectIds.contains(subject.id),
+                              onChanged: (selected) => setState(() {
+                                if (selected == true) {
+                                  _selectedSubjectIds.add(subject.id);
+                                } else {
+                                  _selectedSubjectIds.remove(subject.id);
+                                }
+                              }),
+                            ),
+                        ],
+                      ],
+                    ),
                   },
                   const SizedBox(height: DiarioUpSpacing.md),
                   DecoratedBox(
@@ -207,7 +239,13 @@ final class _HomeworkShareSheetState extends State<_HomeworkShareSheet> {
   }
 
   bool get _canSubmit =>
-      _scope != HomeworkExportScope.subject || _selectedSubjectId != null;
+      _scope != HomeworkExportScope.subject || _selectedSubjectIds.isNotEmpty;
+
+  bool get _allSubjectsSelected =>
+      widget.subjects.isNotEmpty &&
+      widget.subjects.every(
+        (subject) => _selectedSubjectIds.contains(subject.id),
+      );
 
   Future<void> _pickDay() async {
     final selected = await showDatePicker(
@@ -241,13 +279,10 @@ final class _HomeworkShareSheetState extends State<_HomeworkShareSheet> {
   }
 
   HomeworkExportSelection _subjectSelection() {
-    final subject = widget.subjects.singleWhere(
-      (item) => item.id == _selectedSubjectId,
-    );
-    return HomeworkExportSelection.subject(
-      subjectId: subject.id,
-      subjectName: subject.name,
-    );
+    return HomeworkExportSelection.subjects({
+      for (final subject in widget.subjects)
+        if (_selectedSubjectIds.contains(subject.id)) subject.id: subject.name,
+    });
   }
 }
 

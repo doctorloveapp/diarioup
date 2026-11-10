@@ -79,6 +79,16 @@ I colori devono essere esposti tramite Theme/Design Tokens, non copiati come lit
 - Preferire i pesi Inter 400 (regular), 500 (medium), 600 (semibold) e 700 (bold). Evitare pesi arbitrari.
 - Definire gli stili nel tema tipografico centrale; non impostare dimensioni e pesi isolati senza una motivazione di design.
 
+### Stile dei PDF condivisi
+
+- Lo stile di `DiarioUpPdfGenerator` è approvato dall'utente e va preservato:
+  font Inter, gerarchia tipografica, logo, palette, margini, tabelle a righe
+  alternate e footer con numerazione. Un ridisegno richiede una richiesta
+  esplicita dell'utente; nuove sezioni devono mantenere questo linguaggio visivo.
+- L'esportazione per materie non applica finestre temporali: include compiti
+  passati, presenti, futuri e senza scadenza. I completati vengono esclusi
+  solo in questa modalità; Settimana e Giorno restano cronologici e li includono.
+
 ### Spaziatura e layout
 
 Usare esclusivamente la scala di spaziatura: **4 / 8 / 12 / 16 / 24 / 32 px**.

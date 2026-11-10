@@ -190,6 +190,13 @@ abstract final class AppCopy {
   static const String exportSubject = 'Materia specifica';
   static const String selectDay = 'Scegli giorno';
   static const String selectSubject = 'Scegli materia';
+  static const String selectSubjects = 'Scegli una o più materie';
+  static const String selectAllSubjects = 'Seleziona tutte';
+  static const String deselectAllSubjects = 'Deseleziona tutte';
+  static const String exportSubjectsHint =
+      'Tutte le date, anche passate e senza scadenza. I compiti completati e le note personali non saranno inclusi.';
+  static const String exportNoSubjects =
+      'Nessuna materia disponibile da condividere.';
   static const String sharePdf = 'Crea e condividi PDF';
   static const String exportPrivacy = 'Le note personali non saranno incluse.';
   static const String exportPreparing = 'Preparazione del PDF...';

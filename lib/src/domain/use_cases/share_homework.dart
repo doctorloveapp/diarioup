@@ -72,8 +72,9 @@ final class ShareHomework {
       HomeworkExportScope.day =>
         'giorno_${_schoolDatePart(selection.anchorDate!)}.pdf',
       HomeworkExportScope.subject =>
-        'materia_${_slug(selection.subjectName)}_dal_'
-            '${_dateTimePart(generatedAt)}.pdf',
+        selection.subjectsById.length == 1
+            ? 'materia_${_slug(selection.subjectName)}_dal_${_dateTimePart(generatedAt)}.pdf'
+            : 'materie_${selection.subjectsById.length}_selezionate_dal_${_dateTimePart(generatedAt)}.pdf',
     };
   }
 

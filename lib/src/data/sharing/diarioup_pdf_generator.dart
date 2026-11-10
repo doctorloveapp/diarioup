@@ -30,6 +30,9 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
     required HomeworkExportSelection selection,
     required DateTime generatedAt,
   }) async {
+    final exported = selection.scope == HomeworkExportScope.subject
+        ? HomeworkExportFilter.apply(homework: homework, selection: selection)
+        : homework;
     final document = pw.Document(
       title: 'Compiti DiarioUp',
       creator: 'DiarioUp',
@@ -40,6 +43,9 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
 
     document.addPage(
       pw.MultiPage(
+        // Full subject histories can exceed the default 20-page safeguard.
+        // Chronological exports retain their existing limit.
+        maxPages: selection.scope == HomeworkExportScope.subject ? 200 : 20,
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(32, 28, 32, 28),
         header: (context) => _buildHeader(selectionLabel),
@@ -58,78 +64,144 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: <pw.Widget>[
-                pw.Text(
-                  selectionLabel,
-                  style: pw.TextStyle(
-                    color: _ink,
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
+                pw.Expanded(
+                  child: pw.Text(
+                    selectionLabel,
+                    style: pw.TextStyle(
+                      color: _ink,
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
                   ),
                 ),
+                pw.SizedBox(width: 12),
                 pw.Text(
-                  '${homework.length} ${homework.length == 1 ? 'compito' : 'compiti'}',
+                  '${exported.length} ${exported.length == 1 ? 'compito' : 'compiti'}',
                   style: pw.TextStyle(color: _secondary, fontSize: 9),
                 ),
               ],
             ),
           ),
           pw.SizedBox(height: 14),
-          pw.TableHelper.fromTextArray(
-            headers: const <String>['Materia', 'Testo', 'Scadenza'],
-            data: homework
-                .map(
-                  (item) => <String>[
-                    _clean(item.subjectName) ?? 'Senza materia',
-                    _clean(item.text) ?? '',
-                    item.dueOn == null
-                        ? 'Senza scadenza'
-                        : formatDueDate(item.dueOn!),
-                  ],
-                )
-                .toList(growable: false),
-            border: pw.TableBorder(
-              horizontalInside: pw.BorderSide(color: _border, width: 0.5),
-              bottom: pw.BorderSide(color: _border, width: 0.7),
-            ),
-            columnWidths: const <int, pw.TableColumnWidth>{
-              0: pw.FlexColumnWidth(1.7),
-              1: pw.FlexColumnWidth(4.1),
-              2: pw.FlexColumnWidth(2.2),
-            },
-            headerAlignment: pw.Alignment.centerLeft,
-            cellAlignment: pw.Alignment.topLeft,
-            headerPadding: const pw.EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 8,
-            ),
-            cellPadding: const pw.EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 8,
-            ),
-            headerDecoration: pw.BoxDecoration(color: _indigo),
-            oddRowDecoration: pw.BoxDecoration(color: _surfaceTint),
-            headerStyle: pw.TextStyle(
-              color: PdfColors.white,
-              fontSize: 9.5,
-              fontWeight: pw.FontWeight.bold,
-            ),
-            cellStyle: pw.TextStyle(
-              color: _ink,
-              fontSize: 9.5,
-              lineSpacing: 1.8,
-            ),
-            textStyleBuilder: (column, data, row) => pw.TextStyle(
-              color: column == 2 ? _secondary : _ink,
-              fontSize: 9.5,
-              lineSpacing: 1.8,
-              fontWeight: column == 0 ? pw.FontWeight.bold : null,
-            ),
-          ),
+          ..._buildTables(exported, selection),
         ],
       ),
     );
 
     return document.save();
+  }
+
+  List<pw.Widget> _buildTables(
+    List<HomeworkAgendaItem> homework,
+    HomeworkExportSelection selection,
+  ) {
+    if (selection.scope != HomeworkExportScope.subject) {
+      return [_buildTable(homework)];
+    }
+    final groups = <String, List<HomeworkAgendaItem>>{};
+    for (final item in homework) {
+      (groups[item.subjectId!] ??= []).add(item);
+    }
+    return [
+      for (final group in groups.entries) ...[
+        // Keep space for a section header and its first row. The table header
+        // repeats the subject name on every continuation page.
+        pw.NewPage(freeSpace: 120),
+        _buildTable(
+          group.value,
+          subjectTitle: selection.subjectsById[group.key]!,
+        ),
+        pw.SizedBox(height: 14),
+      ],
+    ];
+  }
+
+  pw.Table _buildTable(
+    List<HomeworkAgendaItem> homework, {
+    String? subjectTitle,
+  }) {
+    final grouped = subjectTitle != null;
+    return pw.TableHelper.fromTextArray(
+      headers: grouped
+          ? <pw.Widget>[
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    subjectTitle,
+                    style: pw.TextStyle(
+                      color: PdfColors.white,
+                      fontSize: 12.5,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.Text(
+                    'Testo',
+                    style: pw.TextStyle(
+                      color: PdfColors.white,
+                      fontSize: 9.5,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Text(
+                'Scadenza',
+                style: pw.TextStyle(
+                  color: PdfColors.white,
+                  fontSize: 9.5,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ]
+          : const <String>['Materia', 'Testo', 'Scadenza'],
+      data: homework
+          .map(
+            (item) => <String>[
+              if (!grouped) _clean(item.subjectName) ?? 'Senza materia',
+              _clean(item.text) ?? '',
+              item.dueOn == null
+                  ? 'Senza scadenza'
+                  : formatDueDate(item.dueOn!),
+            ],
+          )
+          .toList(growable: false),
+      border: pw.TableBorder(
+        horizontalInside: pw.BorderSide(color: _border, width: 0.5),
+        bottom: pw.BorderSide(color: _border, width: 0.7),
+      ),
+      columnWidths: grouped
+          ? const <int, pw.TableColumnWidth>{
+              0: pw.FlexColumnWidth(5.8),
+              1: pw.FlexColumnWidth(2.2),
+            }
+          : const <int, pw.TableColumnWidth>{
+              0: pw.FlexColumnWidth(1.7),
+              1: pw.FlexColumnWidth(4.1),
+              2: pw.FlexColumnWidth(2.2),
+            },
+      headerAlignment: grouped
+          ? pw.Alignment.bottomLeft
+          : pw.Alignment.centerLeft,
+      cellAlignment: pw.Alignment.topLeft,
+      headerPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      headerDecoration: pw.BoxDecoration(color: _indigo),
+      oddRowDecoration: pw.BoxDecoration(color: _surfaceTint),
+      headerStyle: pw.TextStyle(
+        color: PdfColors.white,
+        fontSize: 9.5,
+        fontWeight: pw.FontWeight.bold,
+      ),
+      cellStyle: pw.TextStyle(color: _ink, fontSize: 9.5, lineSpacing: 1.8),
+      textStyleBuilder: (column, data, row) => pw.TextStyle(
+        color: column == (grouped ? 1 : 2) ? _secondary : _ink,
+        fontSize: 9.5,
+        lineSpacing: 1.8,
+        fontWeight: !grouped && column == 0 ? pw.FontWeight.bold : null,
+      ),
+    );
   }
 
   pw.Widget _buildHeader(String selectionLabel) {
@@ -200,7 +272,9 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
     return switch (selection.scope) {
       HomeworkExportScope.day => 'Giorno ${_formatDate(selection.anchorDate!)}',
       HomeworkExportScope.subject =>
-        'Materia ${_clean(selection.subjectName) ?? 'selezionata'}',
+        selection.subjectsById.length == 1
+            ? 'Materia ${_clean(selection.subjectName) ?? 'selezionata'}'
+            : 'Materie selezionate (${selection.subjectsById.length})',
       HomeworkExportScope.week ||
       HomeworkExportScope.nextWeek => _weekLabel(selection.anchorDate!),
     };

@@ -59,41 +59,44 @@ void main() {
     },
   );
 
-  test('include i compiti completati nell esportazione condivisa', () {
-    final homework = <HomeworkAgendaItem>[
-      _homework(
-        'pending',
-        dueOn: const SchoolDate(2026, 9, 30),
-        subjectId: 'math',
-      ),
-      _homework(
-        'done',
-        dueOn: const SchoolDate(2026, 9, 30),
-        subjectId: 'math',
-        isDone: true,
-      ),
-    ];
+  test(
+    'settimana e giorno includono i completati, le materie li escludono',
+    () {
+      final homework = <HomeworkAgendaItem>[
+        _homework(
+          'pending',
+          dueOn: const SchoolDate(2026, 9, 30),
+          subjectId: 'math',
+        ),
+        _homework(
+          'done',
+          dueOn: const SchoolDate(2026, 9, 30),
+          subjectId: 'math',
+          isDone: true,
+        ),
+      ];
 
-    final forWeek = HomeworkExportFilter.apply(
-      homework: homework,
-      selection: HomeworkExportSelection.week(monday),
-    );
-    final forDay = HomeworkExportFilter.apply(
-      homework: homework,
-      selection: HomeworkExportSelection.day(const SchoolDate(2026, 9, 30)),
-    );
-    final forSubject = HomeworkExportFilter.apply(
-      homework: homework,
-      selection: HomeworkExportSelection.subject(
-        subjectId: 'math',
-        subjectName: 'Matematica',
-      ),
-    );
+      final forWeek = HomeworkExportFilter.apply(
+        homework: homework,
+        selection: HomeworkExportSelection.week(monday),
+      );
+      final forDay = HomeworkExportFilter.apply(
+        homework: homework,
+        selection: HomeworkExportSelection.day(const SchoolDate(2026, 9, 30)),
+      );
+      final forSubject = HomeworkExportFilter.apply(
+        homework: homework,
+        selection: HomeworkExportSelection.subject(
+          subjectId: 'math',
+          subjectName: 'Matematica',
+        ),
+      );
 
-    expect(forWeek.map((item) => item.id), <String>['done', 'pending']);
-    expect(forDay.map((item) => item.id), <String>['done', 'pending']);
-    expect(forSubject.map((item) => item.id), <String>['done', 'pending']);
-  });
+      expect(forWeek.map((item) => item.id), <String>['done', 'pending']);
+      expect(forDay.map((item) => item.id), <String>['done', 'pending']);
+      expect(forSubject.map((item) => item.id), <String>['pending']);
+    },
+  );
 
   test('il caso d uso invia anche i completati al generatore PDF', () async {
     final generator = _CapturingPdfGenerator();
@@ -192,6 +195,92 @@ void main() {
     );
 
     expect(result.map((item) => item.id), <String>['dated', 'without-date']);
+  });
+
+  test(
+    'piu materie conservano tutte le date e raggruppano per materia',
+    () async {
+      final generator = _CapturingPdfGenerator();
+      final sharer = _CapturingFileSharer();
+      final source = {'italian': 'Italiano', 'math': 'Matematica'};
+      final selection = HomeworkExportSelection.subjects(source);
+      source.clear();
+      final useCase = ShareHomework(
+        repository: _HomeworkRepository([
+          _homework(
+            'math-past',
+            subjectId: 'math',
+            dueOn: const SchoolDate(2024, 1, 1),
+          ),
+          _homework(
+            'it-future',
+            subjectId: 'italian',
+            dueOn: const SchoolDate(2030, 12, 31),
+          ),
+          _homework(
+            'it-past',
+            subjectId: 'italian',
+            dueOn: const SchoolDate(2024, 1, 2),
+          ),
+          _homework(
+            'it-today',
+            subjectId: 'italian',
+            dueOn: const SchoolDate(2026, 11, 10),
+          ),
+          _homework('it-undated', subjectId: 'italian'),
+          _homework('it-done', subjectId: 'italian', isDone: true),
+          _homework('math-done', subjectId: 'math', isDone: true),
+          _homework('other', subjectId: 'history'),
+          _homework('no-subject'),
+        ]),
+        pdfGenerator: generator,
+        fileSharer: sharer,
+        now: () => DateTime(2026, 11, 10),
+      );
+      final result = await useCase(
+        profileId: 'profile-1',
+        selection: selection,
+      );
+      expect(generator.received.map((item) => item.id), [
+        'it-past',
+        'it-today',
+        'it-future',
+        'it-undated',
+        'math-past',
+      ]);
+      expect(result.itemCount, 5);
+      expect(selection.subjectsById, {
+        'italian': 'Italiano',
+        'math': 'Matematica',
+      });
+      expect(sharer.fileNames, ['materie_2_selezionate_dal_10_11_2026.pdf']);
+    },
+  );
+
+  test(
+    'non genera PDF se tutte le materie selezionate hanno solo completati',
+    () async {
+      final generator = _CapturingPdfGenerator();
+      final sharer = _CapturingFileSharer();
+      final result =
+          await ShareHomework(
+            repository: _HomeworkRepository([
+              _homework('done', subjectId: 'math', isDone: true),
+            ]),
+            pdfGenerator: generator,
+            fileSharer: sharer,
+          )(
+            profileId: 'profile-1',
+            selection: HomeworkExportSelection.subjects({'math': 'Matematica'}),
+          );
+      expect(result.status, HomeworkShareStatus.empty);
+      expect(generator.received, isEmpty);
+      expect(sharer.callCount, 0);
+    },
+  );
+
+  test('la selezione vuota non esporta accidentalmente tutte le materie', () {
+    expect(() => HomeworkExportSelection.subjects({}), throwsArgumentError);
   });
 }
 

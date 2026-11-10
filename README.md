@@ -5,7 +5,7 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.6.1+14**.
+Versione corrente: **1.7.0+15**.
 
 Il login SSO gestisce cookie temporanei per host/dominio e fino a quindici
 passaggi, incluse le pagine HTML di consenso e i redirect relativi del portale.
@@ -54,8 +54,13 @@ Per condividere i compiti, toccare l'icona **Condividi** nella Dashboard,
 scegliere **Settimana corrente**, **Settimana prossima**, giorno o materia e
 confermare **Crea e condividi PDF**. La settimana prossima comprende le
 scadenze dal prossimo lunedì alla domenica successiva.
-La condivisione include anche i compiti segnati come completati, perché lo stato
-della checklist è personale; le note personali restano sempre escluse. Il PDF
+Con **Materia specifica** si possono scegliere più materie, anche con
+**Seleziona tutte** / **Deseleziona tutte**. Il PDF le raggruppa in sezioni,
+con nome della materia ripetuto sulle pagine successive e compiti in ordine di
+scadenza dentro ciascuna sezione. Non ci sono limiti di data: sono inclusi
+compiti passati, presenti, futuri e senza scadenza; in questa modalità i
+completati vengono esclusi. Settimana e Giorno mantengono l'ordine cronologico
+e includono anche i completati. Le note personali restano sempre escluse. Il PDF
 mostra il giorno della settimana accanto a ogni scadenza e usa un nome file
 descrittivo basato sulla selezione. Viene creato nell'area temporanea dell'app e
 cancellato quando il foglio di condivisione si chiude.

@@ -63,10 +63,15 @@ Tocca l'icona **Condividi** nella Dashboard, poi scegli:
 - **Settimana corrente** (da lunedì a domenica);
 - **Settimana prossima** (dal prossimo lunedì alla domenica successiva);
 - **Giorno specifico**;
-- **Materia specifica**.
+- **Materia specifica**: seleziona una o più materie con le caselle, oppure usa
+  **Seleziona tutte** / **Deseleziona tutte**.
 
-Con **Condividi PDF** si apre il menu di sistema per WhatsApp, email o altre
-app. I compiti già completati sono sempre esclusi. Il PDF temporaneo viene
+Con **Crea e condividi PDF** si apre il menu di sistema per WhatsApp, email o altre
+app. Per le materie il PDF contiene sezioni separate con tutti i compiti da
+fare, senza limiti di data: passati, presenti, futuri e senza scadenza.
+I completati sono esclusi solo in questa modalità; Settimana e Giorno
+restano cronologici e comprendono anche i completati. Le note personali non
+vengono mai condivise. Il PDF temporaneo viene
 cancellato dopo la condivisione.
 
 ## Privacy, backup e diagnostica
