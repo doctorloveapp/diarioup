@@ -60,7 +60,7 @@ void main() {
   );
 
   test(
-    'settimana e giorno includono i completati, le materie li escludono',
+    'tutte le modalita includono i completati per condividere anche con i compagni',
     () {
       final homework = <HomeworkAgendaItem>[
         _homework(
@@ -94,7 +94,7 @@ void main() {
 
       expect(forWeek.map((item) => item.id), <String>['done', 'pending']);
       expect(forDay.map((item) => item.id), <String>['done', 'pending']);
-      expect(forSubject.map((item) => item.id), <String>['pending']);
+      expect(forSubject.map((item) => item.id), <String>['done', 'pending']);
     },
   );
 
@@ -159,7 +159,7 @@ void main() {
     expect(sharer.fileNames, <String>[
       'settimana_28_09_2026_a_04_10_2026.pdf',
       'giorno_29_09_2026.pdf',
-      'materia_lingua_e_cultura_greca_dal_28_09_2026.pdf',
+      'materia_lingua_e_cultura_greca_intero_storico_28_09_2026.pdf',
     ]);
   });
 
@@ -245,20 +245,22 @@ void main() {
         'it-past',
         'it-today',
         'it-future',
+        'it-done',
         'it-undated',
         'math-past',
+        'math-done',
       ]);
-      expect(result.itemCount, 5);
+      expect(result.itemCount, 7);
       expect(selection.subjectsById, {
         'italian': 'Italiano',
         'math': 'Matematica',
       });
-      expect(sharer.fileNames, ['materie_2_selezionate_dal_10_11_2026.pdf']);
+      expect(sharer.fileNames, ['materie_2_intero_storico_10_11_2026.pdf']);
     },
   );
 
   test(
-    'non genera PDF se tutte le materie selezionate hanno solo completati',
+    'condivide lo storico anche se tutti i compiti selezionati sono completati',
     () async {
       final generator = _CapturingPdfGenerator();
       final sharer = _CapturingFileSharer();
@@ -273,9 +275,10 @@ void main() {
             profileId: 'profile-1',
             selection: HomeworkExportSelection.subjects({'math': 'Matematica'}),
           );
-      expect(result.status, HomeworkShareStatus.empty);
-      expect(generator.received, isEmpty);
-      expect(sharer.callCount, 0);
+      expect(result.status, HomeworkShareStatus.shared);
+      expect(result.itemCount, 1);
+      expect(generator.received.single.id, 'done');
+      expect(sharer.callCount, 1);
     },
   );
 
@@ -288,6 +291,10 @@ final class _HomeworkRepository implements DidupRepository {
   _HomeworkRepository(this.homework);
 
   final List<HomeworkAgendaItem> homework;
+
+  @override
+  Future<String?> readSchoolClassLabel({required String profileId}) async =>
+      'I B';
 
   @override
   Stream<List<HomeworkAgendaItem>> watchHomework({required String profileId}) =>
@@ -305,6 +312,7 @@ final class _CapturingPdfGenerator implements HomeworkPdfGenerator {
     required List<HomeworkAgendaItem> homework,
     required HomeworkExportSelection selection,
     required DateTime generatedAt,
+    String? schoolClassLabel,
   }) async {
     received = homework;
     return Uint8List.fromList(<int>[37, 80, 68, 70, 45]);

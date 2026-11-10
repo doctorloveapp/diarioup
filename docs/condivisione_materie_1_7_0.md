@@ -1,5 +1,9 @@
 # Condivisione per materie — DiarioUp 1.7.0+15
 
+> Documento storico della 1.7.0. L'esclusione dei completati qui descritta è
+> stata rimossa nella [correzione 1.7.1+16](condivisione_materie_1_7_1.md),
+> che condivide l'intero storico e aggiunge la data di creazione al titolo.
+
 ## Comportamento
 
 | Scelta | Intervallo | Completati | Ordinamento PDF |

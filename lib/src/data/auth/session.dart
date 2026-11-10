@@ -10,6 +10,7 @@ final class DidupProfileSession {
     this.gender = StudentGender.unknown,
     this.academicYear,
     this.academicYearStart,
+    this.schoolClassLabel,
   });
 
   final String sourceProfileId;
@@ -20,6 +21,19 @@ final class DidupProfileSession {
   final StudentGender gender;
   final String? academicYear;
   final DateTime? academicYearStart;
+  final String? schoolClassLabel;
+
+  DidupProfileSession withSchoolClassLabel(String label) => DidupProfileSession(
+    sourceProfileId: sourceProfileId,
+    appAuthToken: appAuthToken,
+    schoolMinistryCode: schoolMinistryCode,
+    notificationOptions: notificationOptions,
+    displayLabel: displayLabel,
+    gender: gender,
+    academicYear: academicYear,
+    academicYearStart: academicYearStart,
+    schoolClassLabel: label,
+  );
 }
 
 final class DidupSession {
@@ -57,6 +71,7 @@ final class DidupSession {
     List<String>? scopes,
     DateTime? expiresAt,
     String? activeProfileId,
+    Map<String, DidupProfileSession>? profiles,
   }) => DidupSession(
     accessToken: accessToken ?? this.accessToken,
     refreshToken: refreshToken ?? this.refreshToken,
@@ -65,7 +80,7 @@ final class DidupSession {
     expiresAt: expiresAt ?? this.expiresAt,
     schoolCode: schoolCode,
     username: username,
-    profiles: profiles,
+    profiles: profiles ?? this.profiles,
     activeProfileId: activeProfileId ?? this.activeProfileId,
   );
 }

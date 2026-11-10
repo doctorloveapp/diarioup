@@ -43,6 +43,7 @@ void main() {
       ],
       selection: HomeworkExportSelection.week(const SchoolDate(2026, 10, 1)),
       generatedAt: DateTime(2026, 9, 28, 18, 30),
+      schoolClassLabel: 'I B',
     );
 
     expect(bytes, isA<Uint8List>());
@@ -92,6 +93,7 @@ void main() {
         'greek': 'Lingua e cultura greca',
       }),
       generatedAt: DateTime(2026, 11, 10, 18),
+      schoolClassLabel: 'I B',
     );
     expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
     expect(bytes.length, greaterThan(10000));

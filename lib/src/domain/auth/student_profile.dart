@@ -8,6 +8,7 @@ final class StudentProfile {
     this.schoolMinistryCode,
     this.academicYear,
     this.academicYearStart,
+    this.schoolClassLabel,
   });
 
   final String sourceProfileId;
@@ -16,4 +17,5 @@ final class StudentProfile {
   final String? schoolMinistryCode;
   final String? academicYear;
   final DateTime? academicYearStart;
+  final String? schoolClassLabel;
 }

@@ -31,6 +31,10 @@ final class TestDidupRepository implements DidupRepository {
   Future<StudentProfile?> restoreActiveProfile() async => _activeProfile;
 
   @override
+  Future<String?> readSchoolClassLabel({required String profileId}) async =>
+      'I B';
+
+  @override
   Future<void> rememberActiveProfile(String profileId) async {
     if (profileId != _profile.sourceProfileId) {
       throw StateError('Profilo di test sconosciuto.');

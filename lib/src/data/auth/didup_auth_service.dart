@@ -13,6 +13,7 @@ import '../network/didup_network_client.dart';
 import '../protocol/didup_protocol_config.dart';
 import 'oauth_html_navigator.dart';
 import 'session.dart';
+import 'school_class_parser.dart';
 
 final class RemoteLoginResult {
   const RemoteLoginResult({required this.session, required this.profiles});
@@ -76,6 +77,7 @@ final class DioDidupAuthService implements DidupAuthService {
           notificationOptions: _parseOptions(loginContext['opzioni']),
           displayLabel: profile.displayLabel,
           gender: profile.gender,
+          schoolClassLabel: profile.schoolClassLabel,
           academicYear: profile.academicYear,
           academicYearStart: profile.academicYearStart,
         );
@@ -395,6 +397,7 @@ final class DioDidupAuthService implements DidupAuthService {
       sourceProfileId: _requiredString(sheet, 'pk'),
       displayLabel: _optionalString(student['nominativo']) ?? '',
       gender: _parseGender(student),
+      schoolClassLabel: SchoolClassParser.parse(raw),
       schoolMinistryCode: schoolMinistryCode,
       academicYear: _optionalString(year['anno']),
       academicYearStart: _optionalDate(year['dataInizio']),

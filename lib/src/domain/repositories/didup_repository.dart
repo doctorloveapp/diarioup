@@ -14,6 +14,9 @@ abstract interface class DidupRepository {
 
   Future<void> rememberActiveProfile(String profileId);
 
+  /// Cached authenticated class for this profile, or null when unavailable.
+  Future<String?> readSchoolClassLabel({required String profileId});
+
   Future<HomeworkBatch> fetchHomework({
     required String profileId,
     required DateTime since,

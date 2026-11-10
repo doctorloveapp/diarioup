@@ -29,17 +29,23 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
     required List<HomeworkAgendaItem> homework,
     required HomeworkExportSelection selection,
     required DateTime generatedAt,
+    String? schoolClassLabel,
   }) async {
     final exported = selection.scope == HomeworkExportScope.subject
         ? HomeworkExportFilter.apply(homework: homework, selection: selection)
         : homework;
+    final selectionLabel = _selectionLabel(selection, generatedAt);
+    final classHeading = _clean(schoolClassLabel) == null
+        ? 'Classe non disponibile'
+        : 'Classe ${_clean(schoolClassLabel)}';
     final document = pw.Document(
-      title: 'Compiti DiarioUp',
+      title: selection.scope == HomeworkExportScope.subject
+          ? 'Compiti DiarioUp - $selectionLabel'
+          : 'Compiti DiarioUp',
       creator: 'DiarioUp',
-      subject: 'Elenco dei compiti',
+      subject: 'Elenco dei compiti - $classHeading',
       theme: pw.ThemeData.withFont(base: _font, bold: _font),
     );
-    final selectionLabel = _selectionLabel(selection);
 
     document.addPage(
       pw.MultiPage(
@@ -48,7 +54,7 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
         maxPages: selection.scope == HomeworkExportScope.subject ? 200 : 20,
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(32, 28, 32, 28),
-        header: (context) => _buildHeader(selectionLabel),
+        header: (context) => _buildHeader(selectionLabel, classHeading),
         footer: (context) => _buildFooter(context, generatedAt),
         build: (context) => <pw.Widget>[
           pw.Container(
@@ -204,7 +210,7 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
     );
   }
 
-  pw.Widget _buildHeader(String selectionLabel) {
+  pw.Widget _buildHeader(String selectionLabel, String classHeading) {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 14),
       child: pw.Row(
@@ -230,6 +236,15 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
                   style: pw.TextStyle(
                     color: _indigo,
                     fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  classHeading,
+                  style: pw.TextStyle(
+                    color: _ink,
+                    fontSize: 10,
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
@@ -268,13 +283,18 @@ final class DiarioUpPdfGenerator implements HomeworkPdfGenerator {
     );
   }
 
-  String _selectionLabel(HomeworkExportSelection selection) {
+  String _selectionLabel(
+    HomeworkExportSelection selection,
+    DateTime generatedAt,
+  ) {
     return switch (selection.scope) {
       HomeworkExportScope.day => 'Giorno ${_formatDate(selection.anchorDate!)}',
       HomeworkExportScope.subject =>
         selection.subjectsById.length == 1
-            ? 'Materia ${_clean(selection.subjectName) ?? 'selezionata'}'
-            : 'Materie selezionate (${selection.subjectsById.length})',
+            ? 'Materia ${_clean(selection.subjectName) ?? 'selezionata'} - '
+                  'Tutte le settimane · Intero storico · Creato il ${_formatDateTimeDate(generatedAt)}'
+            : 'Materie selezionate (${selection.subjectsById.length}) - '
+                  'Tutte le settimane · Intero storico · Creato il ${_formatDateTimeDate(generatedAt)}',
       HomeworkExportScope.week ||
       HomeworkExportScope.nextWeek => _weekLabel(selection.anchorDate!),
     };

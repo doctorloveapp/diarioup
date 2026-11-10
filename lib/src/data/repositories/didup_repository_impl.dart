@@ -12,6 +12,7 @@ import '../../domain/sync/didup_sync.dart';
 import '../auth/didup_auth_service.dart';
 import '../auth/session.dart';
 import '../auth/session_store.dart';
+import '../auth/school_class_parser.dart';
 import '../client/didup_client.dart';
 import '../database/app_database.dart' hide StudentProfile;
 import '../normalization/homework_normalizer.dart';
@@ -98,6 +99,45 @@ final class DidupRepositoryImpl implements DidupRepository {
     }
     if (session.activeProfileId == profileId) return;
     await _sessionStore.write(session.copyWith(activeProfileId: profileId));
+  }
+
+  @override
+  Future<String?> readSchoolClassLabel({required String profileId}) async {
+    final session = await _sessionStore.read();
+    final cached = session?.profiles[profileId]?.schoolClassLabel;
+    if (cached != null && cached.trim().isNotEmpty) return cached;
+    if (session == null || !session.profiles.containsKey(profileId)) {
+      return null;
+    }
+    try {
+      final raw = await _client.fetchProfile(profileId: profileId);
+      final label = SchoolClassParser.parse(raw);
+      if (label == null) return null;
+      // A token refresh or logout may have happened during the request. Never
+      // restore stale tokens, another account, or a session cleared meanwhile.
+      final latest = await _sessionStore.read();
+      final profile = latest?.profiles[profileId];
+      if (latest == null ||
+          profile == null ||
+          latest.schoolCode != session.schoolCode ||
+          latest.username != session.username ||
+          profile.appAuthToken != session.profiles[profileId]?.appAuthToken) {
+        return null;
+      }
+      await _sessionStore.write(
+        latest.copyWith(
+          profiles: {
+            ...latest.profiles,
+            profileId: profile.withSchoolClassLabel(label),
+          },
+        ),
+      );
+      return label;
+    } on DidupFailure {
+      // Sharing must remain available offline; never invent a class or reuse
+      // another child's metadata. The PDF explicitly marks missing metadata.
+      return null;
+    }
   }
 
   @override
@@ -251,6 +291,7 @@ final class DidupRepositoryImpl implements DidupRepository {
         sourceProfileId: profile.sourceProfileId,
         displayLabel: profile.displayLabel,
         gender: profile.gender,
+        schoolClassLabel: profile.schoolClassLabel,
         schoolMinistryCode: profile.schoolMinistryCode,
         academicYear: profile.academicYear,
         academicYearStart: profile.academicYearStart,

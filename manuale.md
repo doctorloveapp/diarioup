@@ -67,10 +67,16 @@ Tocca l'icona **Condividi** nella Dashboard, poi scegli:
   **Seleziona tutte** / **Deseleziona tutte**.
 
 Con **Crea e condividi PDF** si apre il menu di sistema per WhatsApp, email o altre
-app. Per le materie il PDF contiene sezioni separate con tutti i compiti da
-fare, senza limiti di data: passati, presenti, futuri e senza scadenza.
-I completati sono esclusi solo in questa modalità; Settimana e Giorno
-restano cronologici e comprendono anche i completati. Le note personali non
+app. Per le materie il PDF contiene sezioni separate con tutti i compiti,
+senza limiti di data: passati, presenti, futuri e senza scadenza, anche completati.
+Il titolo indica **Tutte le settimane · Intero storico · Creato il GG/MM/AAAA**;
+la data indica quando hai generato il PDF, non un limite ai compiti inclusi.
+Nell'intestazione trovi anche la classe e la sezione del profilo scelto, per
+esempio **Classe I B**. Se Argo non le ha ancora fornite e sei offline, compare
+**Classe non disponibile**: riprova la condivisione quando sei connesso.
+Anche il nome del file
+contiene **intero_storico**. Settimana e Giorno restano cronologici.
+Le note personali non
 vengono mai condivise. Il PDF temporaneo viene
 cancellato dopo la condivisione.
 

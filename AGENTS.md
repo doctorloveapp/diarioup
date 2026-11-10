@@ -86,8 +86,15 @@ I colori devono essere esposti tramite Theme/Design Tokens, non copiati come lit
   alternate e footer con numerazione. Un ridisegno richiede una richiesta
   esplicita dell'utente; nuove sezioni devono mantenere questo linguaggio visivo.
 - L'esportazione per materie non applica finestre temporali: include compiti
-  passati, presenti, futuri e senza scadenza. I completati vengono esclusi
-  solo in questa modalità; Settimana e Giorno restano cronologici e li includono.
+  passati, presenti, futuri e senza scadenza, inclusi quelli completati.
+  Lo stato della checklist è personale e non deve limitare ciò che si condivide.
+  Settimana e Giorno restano cronologici. Le note personali sono sempre escluse.
+  Titolo e nome file delle esportazioni per materie devono indicare chiaramente
+  che si tratta dell'intero storico, non della sola settimana corrente.
+- Ogni PDF riporta classe e sezione del profilo a cui appartengono i compiti,
+  tratte dalla risposta autenticata Argo e conservate nel secure storage.
+  Non inferirle dall'orario preimpostato né riusare quelle di un altro figlio.
+  In assenza del dato dichiarare «Classe non disponibile», senza inventarlo.
 
 ### Spaziatura e layout
 

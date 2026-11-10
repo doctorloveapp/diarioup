@@ -49,6 +49,44 @@ final class DidupClient {
     await _network.clearTransientCookies();
   }
 
+  /// Used to enrich sessions created before class metadata was persisted.
+  Future<Map<String, Object?>> fetchProfile({required String profileId}) async {
+    try {
+      return await _fetchProfile(profileId);
+    } on DioException {
+      throw const NetworkFailure();
+    }
+  }
+
+  Future<Map<String, Object?>> _fetchProfile(String profileId) async {
+    var session = await _requireSession();
+    if (session.expiresWithin(_now().toUtc(), _config.refreshLeeway)) {
+      session = await _refreshOnce(session);
+    }
+    Future<Response<Object?>> request(DidupSession current) {
+      final profile = current.profiles[profileId];
+      if (profile == null) throw const PermissionDeniedFailure();
+      return _dio.getUri<Object?>(
+        _config.apiUri('profilo'),
+        options: Options(headers: _sessionHeaders(current, profile)),
+      );
+    }
+
+    var response = await request(session);
+    if (response.statusCode == 401) {
+      session = await _refreshOnce(session, force: true);
+      response = await request(session);
+    }
+    _throwForStatus(response);
+    final body = _stringMap(response.data);
+    if (body['success'] == false) throw const InvalidPayloadFailure();
+    final data = _stringMap(body['data']);
+    if (_stringMap(data['scheda'])['pk'] != profileId) {
+      throw const InvalidPayloadFailure('Profilo ricevuto non corrispondente.');
+    }
+    return data;
+  }
+
   Future<DidupSession> _requireSession() async {
     final session = await _sessionStore.read();
     if (session == null) throw const SessionExpiredFailure();

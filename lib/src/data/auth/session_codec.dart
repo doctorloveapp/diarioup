@@ -26,6 +26,7 @@ final class SessionCodec {
           'notificationOptions': entry.value.notificationOptions,
           'displayLabel': entry.value.displayLabel,
           'gender': entry.value.gender.name,
+          'schoolClassLabel': entry.value.schoolClassLabel,
           'academicYear': entry.value.academicYear,
           'academicYearStart': entry.value.academicYearStart
               ?.toUtc()
@@ -51,6 +52,7 @@ final class SessionCodec {
           notificationOptions: _stringBoolMap(value['notificationOptions']),
           displayLabel: _optionalString(value['displayLabel']) ?? '',
           gender: _decodeGender(value['gender']),
+          schoolClassLabel: _optionalString(value['schoolClassLabel']),
           academicYear: _optionalString(value['academicYear']),
           academicYearStart: _optionalDate(value['academicYearStart']),
         );

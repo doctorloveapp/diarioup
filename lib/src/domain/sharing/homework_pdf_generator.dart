@@ -8,5 +8,6 @@ abstract interface class HomeworkPdfGenerator {
     required List<HomeworkAgendaItem> homework,
     required HomeworkExportSelection selection,
     required DateTime generatedAt,
+    String? schoolClassLabel,
   });
 }

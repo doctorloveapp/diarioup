@@ -49,10 +49,14 @@ final class ShareHomework {
     }
 
     final generatedAt = _now();
+    final schoolClassLabel = await _repository.readSchoolClassLabel(
+      profileId: profileId,
+    );
     final bytes = await _pdfGenerator.generate(
       homework: selectedHomework,
       selection: selection,
       generatedAt: generatedAt,
+      schoolClassLabel: schoolClassLabel,
     );
     await _fileSharer.sharePdf(
       bytes: bytes,
@@ -73,8 +77,8 @@ final class ShareHomework {
         'giorno_${_schoolDatePart(selection.anchorDate!)}.pdf',
       HomeworkExportScope.subject =>
         selection.subjectsById.length == 1
-            ? 'materia_${_slug(selection.subjectName)}_dal_${_dateTimePart(generatedAt)}.pdf'
-            : 'materie_${selection.subjectsById.length}_selezionate_dal_${_dateTimePart(generatedAt)}.pdf',
+            ? 'materia_${_slug(selection.subjectName)}_intero_storico_${_dateTimePart(generatedAt)}.pdf'
+            : 'materie_${selection.subjectsById.length}_intero_storico_${_dateTimePart(generatedAt)}.pdf',
     };
   }
 

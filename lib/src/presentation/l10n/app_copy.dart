@@ -194,7 +194,7 @@ abstract final class AppCopy {
   static const String selectAllSubjects = 'Seleziona tutte';
   static const String deselectAllSubjects = 'Deseleziona tutte';
   static const String exportSubjectsHint =
-      'Tutte le date, anche passate e senza scadenza. I compiti completati e le note personali non saranno inclusi.';
+      'Intero storico di tutte le settimane: compiti passati, presenti, futuri e senza scadenza, inclusi quelli completati. Le note personali non saranno incluse.';
   static const String exportNoSubjects =
       'Nessuna materia disponibile da condividere.';
   static const String sharePdf = 'Crea e condividi PDF';

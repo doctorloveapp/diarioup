@@ -94,7 +94,13 @@ void main() {
           return jsonResponse(200, <String, Object?>{
             'success': true,
             'data': <String, Object?>{
-              'scheda': <String, Object?>{'pk': 'profile-$suffix'},
+              'scheda': <String, Object?>{
+                'pk': 'profile-$suffix',
+                'classe': {
+                  'desDenominazione': suffix == '1' ? '1' : '3',
+                  'desSezione': suffix == '1' ? 'B' : 'C',
+                },
+              },
               'alunno': <String, Object?>{
                 'nominativo': suffix == '1' ? 'ROSSI GIULIA' : 'Profilo 2',
                 'sesso': suffix == '1' ? 'F' : 'M',
@@ -139,8 +145,21 @@ void main() {
       expect(result.requiresProfileSelection, isTrue);
       expect(result.profiles.first.gender, StudentGender.female);
       expect(result.profiles.last.gender, StudentGender.male);
+      expect(result.profiles.first.schoolClassLabel, 'I B');
+      expect(result.profiles.last.schoolClassLabel, 'III C');
       expect(store.writeCount, 1);
       final encoded = const SessionCodec().encode(store.value!);
+      final decoded = const SessionCodec().decode(encoded);
+      expect(decoded.profiles['profile-1']!.schoolClassLabel, 'I B');
+      expect(decoded.profiles['profile-2']!.schoolClassLabel, 'III C');
+      expect(
+        await repository.readSchoolClassLabel(profileId: 'profile-1'),
+        'I B',
+      );
+      expect(
+        await repository.readSchoolClassLabel(profileId: 'profile-2'),
+        'III C',
+      );
       expect(encoded, isNot(contains(password)));
       expect(encoded.toLowerCase(), isNot(contains('password')));
       expect(credentials.toString(), isNot(contains(password)));
@@ -153,6 +172,7 @@ void main() {
       expect(store.value!.activeProfileId, selectedProfile.sourceProfileId);
       expect(restoredProfile!.sourceProfileId, selectedProfile.sourceProfileId);
       expect(restoredProfile.gender, StudentGender.male);
+      expect(restoredProfile.schoolClassLabel, 'III C');
     },
   );
 

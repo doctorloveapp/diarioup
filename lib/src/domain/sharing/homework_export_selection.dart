@@ -71,10 +71,9 @@ abstract final class HomeworkExportFilter {
         (item) => item.dueOn == selection.anchorDate,
       ),
       HomeworkExportScope.subject => homework.where(
-        // Subject exports deliberately have no date window, including overdue
-        // and undated items. Completion is personal and excluded in this mode.
-        (item) =>
-            !item.isDone && selection.subjectsById.containsKey(item.subjectId),
+        // Share the entire subject history, not the personal to-do list:
+        // dates and local completion flags must never hide assignments.
+        (item) => selection.subjectsById.containsKey(item.subjectId),
       ),
     };
     final result = filtered.toList(growable: false)
