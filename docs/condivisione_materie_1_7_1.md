@@ -70,3 +70,17 @@ sessione eliminata dal logout. In assenza di rete o metadati il PDF indica
 I campioni sono sintetici, facoltativi (`DIARIOUP_PDF_REVIEW=true`), temporanei
 e non inclusi nell'APK. Non è stato eseguito un test su dispositivo fisico
 durante questa correzione.
+
+## Release verificata
+
+- File: `dist/DiarioUp-1.7.1+16-release.apk`.
+- Package `it.diarioup.diarioup`, versionName `1.7.1`, versionCode `16`.
+- Firma APK v2 valida; stesso certificato delle release precedenti:
+  SHA-256 `125217f5e46081a75f4e9decf0bd0f29c4ab204f9aefe5018f4047b952533fad`.
+- APK non debuggable; asset obbligatori, font e icona dei promemoria verificati;
+  nessun fixture, test, PDF di prova o materiale di firma nel pacchetto.
+- SHA-256 APK:
+  `7D832CD7ED0A952F633879CD2DEDBEBCCEC4BE8F4A52B44DBB5096173C1FA3EE`.
+
+I campioni sintetici usati per la verifica visiva sono stati rimossi e possono
+essere rigenerati con `DIARIOUP_PDF_REVIEW=true` nei test di repository/PDF.
