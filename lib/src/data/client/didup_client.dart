@@ -7,6 +7,7 @@ import '../../domain/errors/didup_failure.dart';
 import '../auth/session.dart';
 import '../auth/session_store.dart';
 import '../network/didup_network_client.dart';
+import '../network/didup_read_retry.dart';
 import '../protocol/didup_protocol_config.dart';
 
 final class DidupClient {
@@ -30,15 +31,30 @@ final class DidupClient {
     required String profileId,
     required DateTime since,
   }) async {
+    try {
+      return await _fetchDashboard(profileId: profileId, since: since);
+    } on DioException catch (error) {
+      throw transportFailure(error);
+    }
+  }
+
+  Future<Map<String, Object?>> _fetchDashboard({
+    required String profileId,
+    required DateTime since,
+  }) async {
     var session = await _requireSession();
     if (session.expiresWithin(_now().toUtc(), _config.refreshLeeway)) {
       session = await _refreshOnce(session);
     }
 
-    var response = await _dashboardRequest(session, profileId, since);
+    var response = await _network.readRetry.run(
+      () => _dashboardRequest(session, profileId, since),
+    );
     if (response.statusCode == 401) {
       session = await _refreshOnce(session, force: true);
-      response = await _dashboardRequest(session, profileId, since);
+      response = await _network.readRetry.run(
+        () => _dashboardRequest(session, profileId, since),
+      );
     }
     _throwForStatus(response);
     return _stringMap(response.data);
@@ -53,8 +69,8 @@ final class DidupClient {
   Future<Map<String, Object?>> fetchProfile({required String profileId}) async {
     try {
       return await _fetchProfile(profileId);
-    } on DioException {
-      throw const NetworkFailure();
+    } on DioException catch (error) {
+      throw transportFailure(error);
     }
   }
 
@@ -72,10 +88,10 @@ final class DidupClient {
       );
     }
 
-    var response = await request(session);
+    var response = await _network.readRetry.run(() => request(session));
     if (response.statusCode == 401) {
       session = await _refreshOnce(session, force: true);
-      response = await request(session);
+      response = await _network.readRetry.run(() => request(session));
     }
     _throwForStatus(response);
     final body = _stringMap(response.data);
@@ -201,8 +217,8 @@ final class DidupClient {
       return refreshed;
     } on DidupFailure {
       rethrow;
-    } on DioException catch (_) {
-      throw const NetworkFailure();
+    } on DioException catch (error) {
+      throw transportFailure(error);
     }
   }
 

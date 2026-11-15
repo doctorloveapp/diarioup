@@ -22,6 +22,8 @@ abstract final class AppCopy {
   static const String requiredField = 'Campo obbligatorio';
   static const String loginNetworkUnavailable =
       'Impossibile contattare DidUP. Controlla la connessione e riprova.';
+  static const String loginRequestTimeout =
+      'DidUP non ha risposto in tempo. Il servizio potrebbe essere lento: riprova più tardi.';
   static const String profileSelection = 'Scegli il profilo';
   static const String profileSelectionBody =
       'Questo accesso contiene più studenti. Seleziona quello da usare.';

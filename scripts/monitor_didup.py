@@ -89,6 +89,7 @@ REPOSITORIES: tuple[RepositoryRule, ...] = (
             "tests/test_client.py",
             "tests/test_auth.py",
             "tests/test_models.py",
+            "tests/test_rete.py",
         ),
     ),
     RepositoryRule(
@@ -145,6 +146,9 @@ CRITICAL_ISSUE_PATTERNS = tuple(
 HIGH_ISSUE_PATTERNS = tuple(
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
+        r"\btimeout\b",
+        r"\b(?:502|503|504)\b",
+        r"errore di (?:rete|connessione)",
         r"profilo",
         r"alunno",
         r"dashboard",

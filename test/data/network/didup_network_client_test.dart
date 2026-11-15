@@ -11,7 +11,7 @@ void main() {
     final client = DidupNetworkClient.create(config: testProtocolConfig());
 
     expect(client.dio.options.connectTimeout, const Duration(seconds: 10));
-    expect(client.dio.options.receiveTimeout, const Duration(seconds: 20));
+    expect(client.dio.options.receiveTimeout, const Duration(seconds: 60));
     expect(client.cookieJar, isA<CookieJar>());
     expect(client.cookieJar, isNot(isA<PersistCookieJar>()));
     expect(client.dio.interceptors.whereType<CookieManager>(), hasLength(1));

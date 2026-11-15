@@ -10,6 +10,7 @@ import '../../domain/auth/student_gender.dart';
 import '../../domain/auth/student_profile.dart';
 import '../../domain/errors/didup_failure.dart';
 import '../network/didup_network_client.dart';
+import '../network/didup_read_retry.dart';
 import '../protocol/didup_protocol_config.dart';
 import 'oauth_html_navigator.dart';
 import 'session.dart';
@@ -106,9 +107,7 @@ final class DioDidupAuthService implements DidupAuthService {
     } on DidupFailure {
       rethrow;
     } on DioException catch (error) {
-      final cause = error.error;
-      if (cause is DidupFailure) throw cause;
-      throw const NetworkFailure();
+      throw transportFailure(error);
     } on FormatException catch (_) {
       throw const InvalidPayloadFailure();
     } finally {
@@ -367,17 +366,19 @@ final class DioDidupAuthService implements DidupAuthService {
     _OAuthToken oauth,
     Map<String, Object?> loginContext,
   ) async {
-    final response = await _dio.getUri<Object?>(
-      _config.apiUri('profilo'),
-      options: Options(
-        headers: <String, Object>{
-          'authorization': 'Bearer ${oauth.accessToken}',
-          'argo-client-version': _config.clientVersion,
-          'x-auth-token': _requiredString(loginContext, 'token'),
-          'x-cod-min': _requiredString(loginContext, 'codMin'),
-          if (oauth.expiresAt case final expiresAt?)
-            'x-date-exp-auth': _formatArgoDate(expiresAt),
-        },
+    final response = await _network.readRetry.run(
+      () => _dio.getUri<Object?>(
+        _config.apiUri('profilo'),
+        options: Options(
+          headers: <String, Object>{
+            'authorization': 'Bearer ${oauth.accessToken}',
+            'argo-client-version': _config.clientVersion,
+            'x-auth-token': _requiredString(loginContext, 'token'),
+            'x-cod-min': _requiredString(loginContext, 'codMin'),
+            if (oauth.expiresAt case final expiresAt?)
+              'x-date-exp-auth': _formatArgoDate(expiresAt),
+          },
+        ),
       ),
     );
     _throwForStatus(response.statusCode);

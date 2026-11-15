@@ -1,4 +1,5 @@
 import 'package:diarioup/diarioup.dart';
+import 'package:diarioup/src/data/network/didup_read_retry.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,91 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/fakes.dart';
 
 void main() {
+  test(
+    'timeout in credenziali, code exchange e login applicativo non ripete il POST',
+    () async {
+      for (final failedPath in [
+        '/auth/sso/login',
+        '/oauth2/token',
+        '/appfamiglia/api/rest/login',
+      ]) {
+        final original = _browserSsoAdapter();
+        var failedCalls = 0;
+        final adapter = ScriptedAdapter((request) {
+          expect(request.receiveTimeout, const Duration(seconds: 60));
+          if (request.uri.path == failedPath) {
+            failedCalls++;
+            throw DioException(
+              requestOptions: request,
+              type: DioExceptionType.receiveTimeout,
+              message: 'DETTAGLIO_NON_PUBBLICO',
+            );
+          }
+          return original.handler(request);
+        });
+        final network = DidupNetworkClient.create(
+          config: testProtocolConfig(),
+          dio: Dio()..httpClientAdapter = adapter,
+        );
+        addTearDown(network.dio.close);
+        await expectLater(
+          DioDidupAuthService(networkClient: network).login(
+            AuthCredentials(
+              schoolCode: 'TEST0000',
+              username: 'utente-sintetico',
+              password: 'password-sintetica',
+            ),
+          ),
+          throwsA(
+            isA<RequestTimeoutFailure>().having(
+              (failure) => failure.message,
+              'message',
+              isNot(contains('DETTAGLIO_NON_PUBBLICO')),
+            ),
+          ),
+        );
+        expect(failedCalls, 1);
+        expect(
+          await network.cookieJar.loadForRequest(
+            testProtocolConfig().ssoLoginUri,
+          ),
+          isEmpty,
+        );
+      }
+    },
+  );
+
+  test(
+    'la lettura profilo recupera da 503 senza ripetere OAuth o login',
+    () async {
+      final original = _browserSsoAdapter();
+      var profileCalls = 0;
+      var tokenCalls = 0;
+      final adapter = ScriptedAdapter((request) {
+        if (request.uri.path == '/oauth2/token') tokenCalls++;
+        if (request.uri.path.endsWith('/profilo') && ++profileCalls == 1) {
+          return jsonResponse(503, {});
+        }
+        return original.handler(request);
+      });
+      final network = DidupNetworkClient.create(
+        config: testProtocolConfig(),
+        dio: Dio()..httpClientAdapter = adapter,
+        readRetry: DidupReadRetry(pause: (_, token) async {}),
+      );
+      addTearDown(network.dio.close);
+      final result = await DioDidupAuthService(networkClient: network).login(
+        AuthCredentials(
+          schoolCode: 'TEST0000',
+          username: 'utente-sintetico',
+          password: 'password-sintetica',
+        ),
+      );
+      expect(result.profiles.single.sourceProfileId, 'profile-1');
+      expect(profileCalls, 2);
+      expect(tokenCalls, 1);
+    },
+  );
   test(
     'login PKCE restituisce tutti i profili e non persiste la password',
     () async {

@@ -115,8 +115,36 @@ class MonitorDidupTest(unittest.TestCase):
         }
         self.assertEqual(monitor.issue_severity(issue), monitor.Severity.HIGH)
 
+    def test_network_issues_are_high(self):
+        for title in ("Timeout persistente", "Server 503", "Errore di rete"):
+            with self.subTest(title=title):
+                self.assertEqual(
+                    monitor.issue_severity({"title": title}),
+                    monitor.Severity.HIGH,
+                )
+
+    def test_reviewed_head_does_not_repeat_file_alerts(self):
+        baseline = monitor.load_baseline(monitor.DEFAULT_BASELINE)
+        rule = monitor.REPOSITORIES[0]
+        repository_url = f"/repos/{rule.slug}"
+        head = baseline["repositories"][rule.slug]["headSha"]
+        client = FakeClient({
+            f"{repository_url}/commits/main": {"sha": head},
+            f"{repository_url}/issues?": [],
+            repository_url: {"default_branch": "main"},
+        })
+        findings, current_head = monitor.check_repository(
+            client, rule, baseline["repositories"], baseline["checkedAt"],
+        )
+        self.assertEqual(findings, [])
+        self.assertEqual(current_head, head)
+
     def test_repository_paths_have_expected_priority(self):
         rule = monitor.REPOSITORIES[0]
+        self.assertEqual(
+            monitor.path_severity("tests/test_rete.py", rule),
+            monitor.Severity.HIGH,
+        )
         self.assertEqual(
             monitor.path_severity("tests/test_auth.py", rule),
             monitor.Severity.HIGH,

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-11-07T12:24:02Z",
+  "checkedAt": "2026-11-13T14:01:31Z",
   "officialAppVersion": "1.30.2",
   "repositories": {
     "Rocciadura/didupAPI-wrapper": {
-      "headSha": "4642af88e347f69364e700d55fbd3d9dc41c2f61"
+      "headSha": "e74b1aad67e956913d4398319b30869a66e8d149"
     },
     "DTrombett/portaleargo-api": {
-      "headSha": "df846555471f95836450c8af84e4efde11e3cb08"
+      "headSha": "d77c406e89a8b2601fec49b4c4c71f6a6a13caa3"
     },
     "fcaloro-beep/argo-family-dashboard": {
       "headSha": "c1384792a66d3ad27a767908fb94c51218c8bffc"

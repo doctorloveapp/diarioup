@@ -48,6 +48,7 @@ final class LoginController extends Notifier<LoginState> {
       _recordFailure();
       final message = switch (failure) {
         AuthenticationFailure() => failure.message,
+        RequestTimeoutFailure() => AppCopy.loginRequestTimeout,
         NetworkFailure() => AppCopy.loginNetworkUnavailable,
         _ => failure.message,
       };

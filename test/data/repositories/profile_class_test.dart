@@ -1,4 +1,5 @@
 import 'package:diarioup/diarioup.dart';
+import 'package:diarioup/src/data/network/didup_read_retry.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,7 @@ void main() {
     addTearDown(database.close);
     final network = DidupNetworkClient.create(
       config: testProtocolConfig(),
+      readRetry: DidupReadRetry(pause: (_, token) async {}),
       dio: Dio()..httpClientAdapter = adapter,
     );
     addTearDown(network.dio.close);

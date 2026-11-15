@@ -1,10 +1,136 @@
 import 'package:diarioup/diarioup.dart';
+import 'package:diarioup/src/data/network/didup_read_retry.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fakes.dart';
 
 void main() {
+  final retry = DidupReadRetry(pause: (_, token) async {});
+
+  test(
+    'timeout transitorio della dashboard recupera senza cambiare la sessione',
+    () async {
+      final now = DateTime.utc(2026, 11, 13);
+      final store = MemorySessionStore(
+        testSession(expiresAt: now.add(const Duration(hours: 1))),
+      );
+      final initial = store.value;
+      var calls = 0;
+      final adapter = ScriptedAdapter((request) {
+        expect(request.uri.path.endsWith('/dashboard/dashboard'), isTrue);
+        if (++calls == 1) {
+          throw DioException(
+            requestOptions: request,
+            type: DioExceptionType.receiveTimeout,
+          );
+        }
+        return jsonResponse(200, {
+          'success': true,
+          'data': {'dati': <Object?>[]},
+        });
+      });
+      final network = DidupNetworkClient.create(
+        config: testProtocolConfig(),
+        dio: Dio()..httpClientAdapter = adapter,
+        readRetry: retry,
+      );
+      addTearDown(network.dio.close);
+      final client = DidupClient(
+        networkClient: network,
+        sessionStore: store,
+        now: () => now,
+      );
+      final result = await client.fetchDashboard(
+        profileId: 'profile-1',
+        since: now,
+      );
+      expect(result['success'], isTrue);
+      expect(calls, 2);
+      expect(store.value, same(initial));
+      expect(store.clearCount, 0);
+    },
+  );
+
+  test(
+    'gateway persistente o timeout non cancellano il login salvato',
+    () async {
+      for (final status in [503, null]) {
+        final now = DateTime.utc(2026, 11, 13);
+        final store = MemorySessionStore(
+          testSession(expiresAt: now.add(const Duration(hours: 1))),
+        );
+        final initial = store.value;
+        var calls = 0;
+        final adapter = ScriptedAdapter((request) {
+          calls++;
+          if (status == null) {
+            throw DioException(
+              requestOptions: request,
+              type: DioExceptionType.receiveTimeout,
+            );
+          }
+          return jsonResponse(status, {});
+        });
+        final network = DidupNetworkClient.create(
+          config: testProtocolConfig(),
+          dio: Dio()..httpClientAdapter = adapter,
+          readRetry: retry,
+        );
+        addTearDown(network.dio.close);
+        final client = DidupClient(
+          networkClient: network,
+          sessionStore: store,
+          now: () => now,
+        );
+        await expectLater(
+          client.fetchDashboard(profileId: 'profile-1', since: now),
+          throwsA(
+            status == null
+                ? isA<RequestTimeoutFailure>()
+                : isA<NetworkFailure>(),
+          ),
+        );
+        expect(calls, 3);
+        expect(store.value, same(initial));
+        expect(store.clearCount, 0);
+      }
+    },
+  );
+
+  test(
+    'un timeout nel rinnovo non ripete la rotazione ne elimina la sessione',
+    () async {
+      final now = DateTime.utc(2026, 11, 13);
+      final store = MemorySessionStore(testSession(expiresAt: now));
+      final initial = store.value;
+      final adapter = ScriptedAdapter((request) {
+        expect(request.uri.path.endsWith('/auth/refresh-token'), isTrue);
+        throw DioException(
+          requestOptions: request,
+          type: DioExceptionType.receiveTimeout,
+        );
+      });
+      final network = DidupNetworkClient.create(
+        config: testProtocolConfig(),
+        dio: Dio()..httpClientAdapter = adapter,
+        readRetry: retry,
+      );
+      addTearDown(network.dio.close);
+      final client = DidupClient(
+        networkClient: network,
+        sessionStore: store,
+        now: () => now,
+      );
+      await expectLater(
+        client.fetchDashboard(profileId: 'profile-1', since: now),
+        throwsA(isA<RequestTimeoutFailure>()),
+      );
+      expect(adapter.requests, hasLength(1));
+      expect(store.value, same(initial));
+      expect(store.clearCount, 0);
+    },
+  );
   test(
     'rinnova una sessione scaduta e ripete il recupero con il nuovo token',
     () async {

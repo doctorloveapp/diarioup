@@ -4,24 +4,27 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
 import '../../domain/errors/didup_failure.dart';
 import '../protocol/didup_protocol_config.dart';
+import 'didup_read_retry.dart';
 
 final class DidupNetworkClient {
   DidupNetworkClient._({
     required this.dio,
     required this.cookieJar,
     required this.config,
+    required this.readRetry,
   });
 
   factory DidupNetworkClient.create({
     required DidupProtocolConfig config,
     Dio? dio,
     CookieJar? cookieJar,
+    DidupReadRetry readRetry = const DidupReadRetry(),
   }) {
     final resolvedDio = dio ?? Dio();
     resolvedDio.options = resolvedDio.options.copyWith(
       connectTimeout: const Duration(seconds: 10),
       sendTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 60),
       followRedirects: false,
       maxRedirects: 0,
       validateStatus: (int? status) =>
@@ -38,12 +41,14 @@ final class DidupNetworkClient {
       dio: resolvedDio,
       cookieJar: resolvedJar,
       config: config,
+      readRetry: readRetry,
     );
   }
 
   final Dio dio;
   final CookieJar cookieJar;
   final DidupProtocolConfig config;
+  final DidupReadRetry readRetry;
 
   Future<void> clearTransientCookies() => cookieJar.deleteAll();
 }

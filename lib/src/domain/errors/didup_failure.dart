@@ -42,6 +42,12 @@ final class NetworkFailure extends DidupFailure {
   const NetworkFailure([super.message = 'Rete non disponibile.']);
 }
 
+final class RequestTimeoutFailure extends DidupFailure {
+  const RequestTimeoutFailure([
+    super.message = 'DidUP non ha risposto in tempo. Riprova più tardi.',
+  ]);
+}
+
 final class InvalidPayloadFailure extends DidupFailure {
   const InvalidPayloadFailure([
     super.message = 'La risposta DidUP non ha il formato atteso.',

@@ -5,12 +5,18 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.7.1+16**.
+Versione corrente: **1.7.2+17**.
 
 Il login SSO gestisce cookie temporanei per host/dominio e fino a quindici
 passaggi, incluse le pagine HTML di consenso e i redirect relativi del portale.
 Le pagine vengono interpretate senza eseguire JavaScript; il consenso resta
 limitato al portale autorizzato e agli scope già richiesti.
+
+Il client attende fino a 60 secondi per la risposta DidUP. Le sole letture di
+compiti e profilo vengono ritentate al massimo due volte, con attese di 1 e 2
+secondi, in caso di timeout, connessione interrotta o HTTP 502/503/504. Credenziali,
+codici OAuth e rinnovo dei token non vengono reinviati automaticamente. Un timeout
+non è indicato come credenziali errate e non cancella la sessione salvata.
 
 ## Installazione dell'APK
 
