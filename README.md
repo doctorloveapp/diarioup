@@ -5,7 +5,11 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.7.2+17**.
+Versione corrente: **1.8.0+18**.
+
+La release usa la versione client DidUP **1.30.3**, verificata sull'App Store.
+Il valore viene validato prima della build e prima di usarlo negli header HTTP.
+Nessuna modifica a compiti, PDF, dati locali o flusso OAuth.
 
 Il login SSO gestisce cookie temporanei per host/dominio e fino a quindici
 passaggi, incluse le pagine HTML di consenso e i redirect relativi del portale.

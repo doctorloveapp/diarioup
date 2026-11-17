@@ -231,9 +231,13 @@ def fetch_official_app_version(client: JsonHttpClient) -> str:
         raise MonitorError("L'app DidUP non è presente nella risposta Apple.")
     first = results[0]
     version = first.get("version") if isinstance(first, dict) else None
-    if not isinstance(version, str) or not version.strip():
-        raise MonitorError("Versione DidUP assente nella risposta Apple.")
-    return version.strip()
+    if (
+        not isinstance(version, str)
+        or len(version) > 32
+        or re.fullmatch(r"[0-9]+(?:\.[0-9]+){1,3}", version) is None
+    ):
+        raise MonitorError("Versione DidUP assente o non valida nella risposta Apple.")
+    return version
 
 
 def github_json(client: JsonHttpClient, path: str) -> Any:

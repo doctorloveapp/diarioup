@@ -8,6 +8,112 @@ import '../../support/fakes.dart';
 
 void main() {
   test(
+    'le richieste applicative dichiarano la versione client verificata',
+    () async {
+      final original = _browserSsoAdapter();
+      var applicationCalls = 0;
+      final adapter = ScriptedAdapter((request) {
+        if (request.uri.path.startsWith('/appfamiglia/api/rest/')) {
+          expect(request.headers['argo-client-version'], '1.30.3');
+          applicationCalls++;
+        }
+        return original.handler(request);
+      });
+      final network = DidupNetworkClient.create(
+        config: testProtocolConfig(),
+        dio: Dio()..httpClientAdapter = adapter,
+      );
+      addTearDown(network.dio.close);
+      final result = await DioDidupAuthService(
+        networkClient: network,
+      ).login(_syntheticCredentials());
+      expect(result.profiles, hasLength(1));
+      expect(applicationCalls, 2);
+    },
+  );
+
+  test('blocca il downgrade HTTP anche verso un host Argo autorizzato', () async {
+    final original = _browserSsoAdapter();
+    final adapter = ScriptedAdapter((request) {
+      expect(request.uri.scheme, 'https');
+      if (request.uri.path == '/oauth2/continue') {
+        return redirectResponse(
+          'http://www.portaleargo.it/auth/sso/consent?consent_challenge=private-marker',
+        );
+      }
+      return original.handler(request);
+    });
+    final network = DidupNetworkClient.create(
+      config: testProtocolConfig(),
+      dio: Dio()..httpClientAdapter = adapter,
+    );
+    addTearDown(network.dio.close);
+    await expectLater(
+      DioDidupAuthService(
+        networkClient: network,
+      ).login(_syntheticCredentials()),
+      throwsA(
+        isA<CompatibilityFailure>().having(
+          (failure) => failure.message,
+          'message',
+          isNot(contains('private-marker')),
+        ),
+      ),
+    );
+  });
+
+  test(
+    'challenge con caratteri speciali non inietta campi nel form di login',
+    () async {
+      const challenge = 'a&prefill=true +/=%';
+      final original = _browserSsoAdapter();
+      final adapter = ScriptedAdapter((request) async {
+        if (request.uri.path == '/auth/sso/login') {
+          final fields = Uri.splitQueryString(request.data as String);
+          expect(fields['challenge'], challenge);
+          expect(fields['prefill'], 'false');
+        }
+        final response = await original.handler(request);
+        if (request.uri.path == '/oauth2/auth') {
+          return redirectResponse(
+            '${testProtocolConfig().ssoLoginUri}?login_challenge=${Uri.encodeQueryComponent(challenge)}',
+            cookies: ['oauth_csrf=old; Path=/; Secure; HttpOnly'],
+          );
+        }
+        return response;
+      });
+      final network = DidupNetworkClient.create(
+        config: testProtocolConfig(),
+        dio: Dio()..httpClientAdapter = adapter,
+      );
+      addTearDown(network.dio.close);
+      expect(
+        (await DioDidupAuthService(
+          networkClient: network,
+        ).login(_syntheticCredentials())).profiles,
+        hasLength(1),
+      );
+    },
+  );
+
+  test(
+    'le rappresentazioni degli oggetti autenticati non contengono segreti',
+    () {
+      final session = testSession(expiresAt: DateTime.utc(2027));
+      final representations =
+          '${_syntheticCredentials()} $session ${session.profiles.values.first}';
+      for (final value in [
+        session.accessToken,
+        session.refreshToken!,
+        session.username,
+        session.profiles.values.first.appAuthToken,
+        _syntheticCredentials().password,
+      ]) {
+        expect(representations, isNot(contains(value)));
+      }
+    },
+  );
+  test(
     'timeout in credenziali, code exchange e login applicativo non ripete il POST',
     () async {
       for (final failedPath in [
@@ -542,6 +648,7 @@ ScriptedAdapter _browserSsoAdapter({
           'sso_session=initial; Path=/auth/sso; Secure; HttpOnly',
           'shared=ok; Domain=.portaleargo.it; Path=/; Secure',
           'wrong_host=bad; Domain=auth.portaleargo.it; Path=/',
+          'wrong_tld=bad; Domain=it; Path=/; Secure',
           'wrong_path=bad; Path=/unrelated',
         ],
       );

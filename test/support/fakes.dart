@@ -79,7 +79,7 @@ final class MemorySessionStore implements SessionStore {
 DidupProtocolConfig testProtocolConfig() => DidupProtocolConfig(
   oauthClientId: 'diarioup-contract-test',
   redirectUri: Uri.parse('it.diarioup.test://oauth-callback'),
-  clientVersion: 'contract-test',
+  clientVersion: '1.30.3',
 );
 
 DidupSession testSession({required DateTime expiresAt}) => DidupSession(

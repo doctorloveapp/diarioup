@@ -195,6 +195,16 @@ class MonitorDidupTest(unittest.TestCase):
         self.assertIn("1.31.0", body)
         self.assertNotIn("README modificato", body)
 
+    def test_apple_version_rejects_header_injection_and_malformed_values(self):
+        for version in (
+            "1.30.3\r\nx-test: 1", "1.30.3\n", "latest", "",
+            130, None, ["1.30.3"], "١.٣٠.٣",
+        ):
+            with self.subTest(version=version):
+                client = FakeClient({"itunes.apple.com": {"results": [{"version": version}]}})
+                with self.assertRaises(monitor.MonitorError):
+                    monitor.fetch_official_app_version(client)
+
     def test_smtp_configuration_requires_environment(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(monitor.MonitorError):

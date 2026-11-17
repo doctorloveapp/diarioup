@@ -30,7 +30,7 @@ final class DidupProtocolConfig {
        ssoLoginUri =
            ssoLoginUri ??
            Uri.parse('https://www.portaleargo.it/auth/sso/login') {
-    if (oauthClientId.trim().isEmpty || clientVersion.trim().isEmpty) {
+    if (oauthClientId.trim().isEmpty || !isValidClientVersion(clientVersion)) {
       throw const CompatibilityFailure(
         'Client OAuth e versione devono provenire da una configurazione verificata.',
       );
@@ -66,6 +66,14 @@ final class DidupProtocolConfig {
   final List<String> oauthScopes;
   final String appRefreshProcedure;
   final Duration refreshLeeway;
+
+  /// External version strings become HTTP header values: accept only ASCII
+  /// numeric versions, never whitespace, control characters or arbitrary text.
+  static bool isValidClientVersion(String value) {
+    if (value.length > 32) return false;
+    final match = RegExp(r'[0-9]+(?:\.[0-9]+){1,3}').matchAsPrefix(value);
+    return match != null && match.end == value.length;
+  }
 
   Set<String> get trustedHosts => <String>{
     apiBaseUri.host.toLowerCase(),

@@ -28,6 +28,9 @@ if (-not (Test-Path -LiteralPath $resolvedKeystore -PathType Leaf)) {
 $oauthClientId = Require-EnvironmentValue "DIDUP_OAUTH_CLIENT_ID"
 $redirectUri = Require-EnvironmentValue "DIDUP_REDIRECT_URI"
 $clientVersion = Require-EnvironmentValue "DIDUP_CLIENT_VERSION"
+if ($clientVersion.Length -gt 32 -or $clientVersion -cnotmatch '\A[0-9]+(?:\.[0-9]+){1,3}\z') {
+    throw "Versione client DidUP non valida: sono ammessi solo numeri separati da punti."
+}
 
 $flutterArguments = @(
     "build",
