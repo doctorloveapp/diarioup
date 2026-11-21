@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../../domain/errors/didup_failure.dart';
 import '../auth/session.dart';
+import '../auth/didup_auth_service.dart';
 import '../auth/session_store.dart';
 import '../network/didup_network_client.dart';
 import '../network/didup_read_retry.dart';
@@ -23,6 +24,7 @@ final class DidupClient {
   final SessionStore _sessionStore;
   final DateTime Function() _now;
   Future<DidupSession>? _refreshInFlight;
+  Future<DidupSession>? _bootstrapInFlight;
 
   Dio get _dio => _network.dio;
   DidupProtocolConfig get _config => _network.config;
@@ -106,7 +108,45 @@ final class DidupClient {
   Future<DidupSession> _requireSession() async {
     final session = await _sessionStore.read();
     if (session == null) throw const SessionExpiredFailure();
+    if (session.expiresWithin(_now().toUtc(), _config.refreshLeeway)) {
+      return _refreshOnce(session);
+    }
+    if (!session.usesFamiglia) return _bootstrapOnce(session);
     return session;
+  }
+
+  Future<DidupSession> _bootstrapOnce(DidupSession session) async {
+    final pending = _bootstrapInFlight;
+    if (pending != null) return pending;
+    final operation = _bootstrapAndStore(session);
+    _bootstrapInFlight = operation;
+    try {
+      return await operation;
+    } finally {
+      if (identical(_bootstrapInFlight, operation)) _bootstrapInFlight = null;
+    }
+  }
+
+  Future<DidupSession> _bootstrapAndStore(DidupSession session) async {
+    final renewed = await DioDidupAuthService(
+      networkClient: _network,
+      now: _now,
+    ).bootstrapSession(session);
+    final latest = await _sessionStore.read();
+    if (latest == null ||
+        latest.accessToken != session.accessToken ||
+        latest.username != session.username ||
+        latest.schoolCode != session.schoolCode) {
+      throw const SessionExpiredFailure();
+    }
+    // A profile switch during the request must not be lost.
+    if (latest.activeProfileId != null &&
+        !renewed.profiles.containsKey(latest.activeProfileId)) {
+      throw const PermissionDeniedFailure();
+    }
+    final selected = renewed.copyWith(activeProfileId: latest.activeProfileId);
+    await _sessionStore.write(selected);
+    return selected;
   }
 
   Future<Response<Object?>> _dashboardRequest(
@@ -157,48 +197,41 @@ final class DidupClient {
   Future<DidupSession> _performRefresh(DidupSession session) async {
     final refreshToken = session.refreshToken;
     if (refreshToken == null || refreshToken.isEmpty) {
-      await _sessionStore.clear();
+      await _invalidateIfCurrent(session);
       throw const SessionExpiredFailure();
     }
-    final profile = session.profiles.values.firstOrNull;
-    if (profile == null) {
-      await _sessionStore.clear();
-      throw const SessionExpiredFailure();
-    }
-
     try {
       final response = await _dio.postUri<Object?>(
-        _config.apiUri('auth/refresh-token'),
-        data: <String, Object>{
-          'r-token': refreshToken,
-          'client-id': _config.oauthClientId,
-          'scopes': '[${session.scopes.join(', ')}]',
-          'old-bearer': session.accessToken,
-          'primo-accesso': 'false',
-          'ripeti-login': 'false',
-          if (session.expiresAt != null)
-            'exp-bearer': _formatApiDate(session.expiresAt!),
-          'ts-app': _formatApiDate(_now()),
-          'proc': _config.appRefreshProcedure,
-          'username': session.username,
+        _config.oauthTokenUri,
+        data: <String, String>{
+          'grant_type': 'refresh_token',
+          'refresh_token': refreshToken,
+          'client_id': _config.oauthClientId,
         },
-        options: Options(headers: _sessionHeaders(session, profile)),
+        options: Options(contentType: Headers.formUrlEncodedContentType),
       );
-      if (response.statusCode == 400 || response.statusCode == 401) {
-        await _sessionStore.clear();
+      final body = _stringMap(response.data);
+      if (body['error'] == 'invalid_grant' || response.statusCode == 401) {
+        await _invalidateIfCurrent(session);
         throw const SessionExpiredFailure();
+      }
+      if (body['error'] != null) {
+        throw const CompatibilityFailure(
+          'Il server OAuth non ha autorizzato il rinnovo della sessione.',
+        );
       }
       _throwForStatus(response);
-      final body = _stringMap(response.data);
-      if (body['error'] != null) {
-        await _sessionStore.clear();
-        throw const SessionExpiredFailure();
-      }
       final expiresIn = _optionalInt(body['expires_in']);
+      if (expiresIn == null || expiresIn <= 0) {
+        throw const InvalidPayloadFailure(
+          'Scadenza del token rinnovato non valida.',
+        );
+      }
       final serverDate = DateTime.tryParse(
         response.headers.value('date') ?? '',
       );
       final refreshed = session.copyWith(
+        usesFamiglia: false,
         accessToken: _requiredString(body, 'access_token'),
         refreshToken:
             _optionalString(body['refresh_token']) ?? session.refreshToken,
@@ -207,18 +240,32 @@ final class DidupClient {
             ?.split(' ')
             .where((String value) => value.isNotEmpty)
             .toList(growable: false),
-        expiresAt: expiresIn == null
-            ? session.expiresAt
-            : (serverDate ?? _now().toUtc()).toUtc().add(
-                Duration(seconds: expiresIn),
-              ),
+        expiresAt: (serverDate ?? _now().toUtc()).toUtc().add(
+          Duration(seconds: expiresIn),
+        ),
       );
-      await _sessionStore.write(refreshed);
-      return refreshed;
+      final latest = await _sessionStore.read();
+      if (latest == null || latest.accessToken != session.accessToken) {
+        throw const SessionExpiredFailure();
+      }
+      // Save rotated tokens before bootstrap: a temporary web failure must not
+      // cause the next attempt to reuse a consumed refresh token.
+      final preserved = refreshed.copyWith(
+        activeProfileId: latest.activeProfileId,
+      );
+      await _sessionStore.write(preserved);
+      return _bootstrapOnce(preserved);
     } on DidupFailure {
       rethrow;
     } on DioException catch (error) {
       throw transportFailure(error);
+    }
+  }
+
+  Future<void> _invalidateIfCurrent(DidupSession session) async {
+    final latest = await _sessionStore.read();
+    if (latest?.accessToken == session.accessToken) {
+      await _sessionStore.clear();
     }
   }
 
@@ -228,12 +275,11 @@ final class DidupClient {
   ) => <String, Object>{
     'accept': 'application/json',
     'content-type': Headers.jsonContentType,
-    'argo-client-version': _config.clientVersion,
+    'argo-client-version': _config.famigliaVersion,
+    'os-type': 'WEB',
     'authorization': 'Bearer ${session.accessToken}',
     'x-auth-token': profile.appAuthToken,
     'x-cod-min': profile.schoolMinistryCode,
-    if (session.expiresAt != null)
-      'x-date-exp-auth': _formatApiDate(session.expiresAt!),
   };
 }
 

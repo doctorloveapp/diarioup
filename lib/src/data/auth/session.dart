@@ -47,6 +47,7 @@ final class DidupSession {
     required this.username,
     required this.profiles,
     this.activeProfileId,
+    this.usesFamiglia = false,
   });
 
   final String accessToken;
@@ -56,10 +57,11 @@ final class DidupSession {
   final DateTime? expiresAt;
   final String schoolCode;
 
-  /// Necessario solo al rinnovo applicativo osservato; resta nel secure storage.
+  /// Metadato dell'account conservato nel secure storage, mai nei log.
   final String username;
   final Map<String, DidupProfileSession> profiles;
   final String? activeProfileId;
+  final bool usesFamiglia;
 
   bool expiresWithin(DateTime now, Duration leeway) =>
       expiresAt != null && !expiresAt!.isAfter(now.add(leeway));
@@ -72,6 +74,7 @@ final class DidupSession {
     DateTime? expiresAt,
     String? activeProfileId,
     Map<String, DidupProfileSession>? profiles,
+    bool? usesFamiglia,
   }) => DidupSession(
     accessToken: accessToken ?? this.accessToken,
     refreshToken: refreshToken ?? this.refreshToken,
@@ -82,5 +85,6 @@ final class DidupSession {
     username: username,
     profiles: profiles ?? this.profiles,
     activeProfileId: activeProfileId ?? this.activeProfileId,
+    usesFamiglia: usesFamiglia ?? this.usesFamiglia,
   );
 }

@@ -3,6 +3,9 @@
   "checkedAt": "2026-11-17T15:51:44Z",
   "officialAppVersion": "1.30.3",
   "repositories": {
+    "DanielVd/portaleargo-api": {
+      "headSha": "78e5c71423685cec1469bc3c8ed0d9d8d3e8ac0f"
+    },
     "Rocciadura/didupAPI-wrapper": {
       "headSha": "1a0ffaf83786128679d856998250ab3e3451ac5c"
     },

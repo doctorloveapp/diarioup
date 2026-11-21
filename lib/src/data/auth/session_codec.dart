@@ -8,7 +8,8 @@ final class SessionCodec {
   const SessionCodec();
 
   String encode(DidupSession session) => jsonEncode(<String, Object?>{
-    'schema': 1,
+    'schema': 2,
+    'usesFamiglia': session.usesFamiglia,
     'accessToken': session.accessToken,
     'refreshToken': session.refreshToken,
     'tokenType': session.tokenType,
@@ -38,7 +39,7 @@ final class SessionCodec {
   DidupSession decode(String encoded) {
     try {
       final root = _stringMap(jsonDecode(encoded));
-      if (root['schema'] != 1) {
+      if (root['schema'] != 1 && root['schema'] != 2) {
         throw const InvalidPayloadFailure('Versione sessione non supportata.');
       }
       final rawProfiles = _stringMap(root['profiles']);
@@ -67,6 +68,7 @@ final class SessionCodec {
         username: _requiredString(root, 'username'),
         profiles: profiles,
         activeProfileId: _optionalString(root['activeProfileId']),
+        usesFamiglia: root['schema'] == 2 && root['usesFamiglia'] == true,
       );
     } on FormatException catch (_) {
       throw const InvalidPayloadFailure('Sessione locale non leggibile.');

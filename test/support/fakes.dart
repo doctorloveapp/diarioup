@@ -82,6 +82,49 @@ DidupProtocolConfig testProtocolConfig() => DidupProtocolConfig(
   clientVersion: '1.30.3',
 );
 
+/// Verified Web API structure with synthetic data only, never production assets.
+ResponseBody? famigliaBootstrapResponse(
+  RequestOptions request, {
+  bool twoProfiles = false,
+}) {
+  if (request.uri.path == '/famiglia/api/login') {
+    return jsonResponse(200, {
+      'success': true,
+      'data': [
+        {
+          'token': 'synthetic-app-token',
+          'codMin': 'TEST0000',
+          'opzioni': <Object?>[],
+        },
+        if (twoProfiles)
+          {
+            'token': 'synthetic-second-child',
+            'codMin': 'TEST0000',
+            'opzioni': <Object?>[],
+          },
+      ],
+    });
+  }
+  if (request.uri.path == '/famiglia/api/profilo') {
+    final second = request.headers['x-auth-token'] == 'synthetic-second-child';
+    return jsonResponse(200, {
+      'success': true,
+      'data': {
+        'scheda': {
+          'pk': second ? 'profile-2' : 'profile-1',
+          'classe': {
+            'desDenominazione': second ? '3' : '1',
+            'desSezione': second ? 'C' : 'B',
+          },
+        },
+        'alunno': {'nominativo': 'Profilo sintetico'},
+        'anno': {'anno': '2026/2027', 'dataInizio': '2026-09-01'},
+      },
+    });
+  }
+  return null;
+}
+
 DidupSession testSession({required DateTime expiresAt}) => DidupSession(
   accessToken: 'synthetic-access',
   refreshToken: 'synthetic-refresh',
@@ -90,6 +133,7 @@ DidupSession testSession({required DateTime expiresAt}) => DidupSession(
   expiresAt: expiresAt,
   schoolCode: 'TEST0000',
   username: 'synthetic-user',
+  usesFamiglia: true,
   profiles: <String, DidupProfileSession>{
     'profile-1': DidupProfileSession(
       sourceProfileId: 'profile-1',

@@ -5,11 +5,22 @@ database locale cifrato. La UI legge esclusivamente dal database locale e resta
 utilizzabile offline. Password, contenuti scolastici e log tecnici non vengono
 inviati a servizi di analisi.
 
-Versione corrente: **1.8.0+18**.
+Versione corrente: **1.8.1+19**.
 
-La release usa la versione client DidUP **1.30.3**, verificata sull'App Store.
-Il valore viene validato prima della build e prima di usarlo negli header HTTP.
-Nessuna modifica a compiti, PDF, dati locali o flusso OAuth.
+La release usa l'API Famiglia Web su `didattica.portaleargo.it/famiglia/api/`,
+con versione protocollo **4.1.0** e `os-type: WEB`. Sostituisce gli endpoint
+mobile `appfamiglia/api/rest`, che restituiscono HTTP 503 dopo l'autenticazione.
+Il flusso OAuth/PKCE rimane invariato. Il parametro di build
+`DIDUP_CLIENT_VERSION` mantiene il valore ufficiale DidUP **1.30.3**; è distinto
+dalla versione del protocollo Web. Entrambi sono validati come versioni numeriche.
+
+Le sessioni precedenti vengono convertite al primo accesso alla rete, conservando
+il profilo selezionato. Il rinnovo usa il grant OAuth `refresh_token`, seguito
+dal recupero dei token applicativi Web e di tutti i profili autorizzati.
+Se il server revoca il refresh token, occorre effettuare nuovamente il login;
+la password non viene memorizzata. Un errore temporaneo durante il recupero dei
+profili conserva il token appena rinnovato. Database cifrato, checklist, note,
+personalizzazioni e formato dei PDF restano invariati.
 
 Il login SSO gestisce cookie temporanei per host/dominio e fino a quindici
 passaggi, incluse le pagine HTML di consenso e i redirect relativi del portale.
@@ -119,6 +130,15 @@ L'esclusione è dichiarata in `IGNORED_ISSUES` in `scripts/monitor_didup.py`:
 le altre issue, anche quelle con numero 3 in repository diversi, i cambiamenti
 ai file e le nuove versioni DidUP restano monitorati. Per riprendere gli avvisi
 di quell'issue, rimuovere la sua coppia repository/numero dall'elenco.
+
+Dal 21 novembre 2026 è monitorato anche il fork
+[`DanielVd/portaleargo-api`](https://github.com/DanielVd/portaleargo-api),
+che documenta la migrazione Famiglia Web nel
+[commit 6a85c02](https://github.com/DanielVd/portaleargo-api/commit/6a85c02e298239a81d3a1d0435ec72fb3e83833e).
+La baseline del fork è `78e5c71423685cec1469bc3c8ed0d9d8d3e8ac0f`.
+Le issue HTTP 503 degli altri repository restano monitorate: non vengono
+ignorate automaticamente dopo questa migrazione. Per attivare su GitHub le
+modifiche alla sentinella, pubblicare anche script e baseline aggiornati.
 
 Il progetto segue `Presentation → Domain ← Data`; Drift cifrato è la single
 source of truth. Per la verifica locale:

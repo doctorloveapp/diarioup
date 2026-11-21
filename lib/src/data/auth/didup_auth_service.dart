@@ -55,54 +55,10 @@ final class DioDidupAuthService implements DidupAuthService {
         attempt,
       );
       final oauth = await _exchangeCode(attempt, authorizationCode);
-      final rawProfiles = await _applicationLogin(oauth);
-      final profileSessions = <String, DidupProfileSession>{};
-      final profiles = <StudentProfile>[];
-      String? refreshUsername;
-
-      for (var index = 0; index < rawProfiles.length; index++) {
-        final loginContext = _stringMap(rawProfiles[index]);
-        refreshUsername ??= _optionalString(loginContext['username']);
-        final profilePayload = await _loadProfile(oauth, loginContext);
-        final profile = _parseProfile(
-          profilePayload,
-          schoolMinistryCode: _requiredString(loginContext, 'codMin'),
-        );
-        if (profileSessions.containsKey(profile.sourceProfileId)) {
-          throw const InvalidPayloadFailure('Profilo DidUP duplicato.');
-        }
-        profileSessions[profile.sourceProfileId] = DidupProfileSession(
-          sourceProfileId: profile.sourceProfileId,
-          appAuthToken: _requiredString(loginContext, 'token'),
-          schoolMinistryCode: _requiredString(loginContext, 'codMin'),
-          notificationOptions: _parseOptions(loginContext['opzioni']),
-          displayLabel: profile.displayLabel,
-          gender: profile.gender,
-          schoolClassLabel: profile.schoolClassLabel,
-          academicYear: profile.academicYear,
-          academicYearStart: profile.academicYearStart,
-        );
-        profiles.add(profile);
-      }
-
-      if (profiles.isEmpty) {
-        throw const InvalidPayloadFailure(
-          'Il login non ha restituito profili selezionabili.',
-        );
-      }
-
-      return RemoteLoginResult(
-        session: DidupSession(
-          accessToken: oauth.accessToken,
-          refreshToken: oauth.refreshToken,
-          tokenType: oauth.tokenType,
-          scopes: oauth.scopes,
-          expiresAt: oauth.expiresAt,
-          schoolCode: credentials.schoolCode,
-          username: refreshUsername ?? credentials.username,
-          profiles: profileSessions,
-        ),
-        profiles: List<StudentProfile>.unmodifiable(profiles),
+      return await _loadSession(
+        oauth,
+        credentials.schoolCode,
+        credentials.username,
       );
     } on DidupFailure {
       rethrow;
@@ -113,6 +69,85 @@ final class DioDidupAuthService implements DidupAuthService {
     } finally {
       await _network.clearTransientCookies();
     }
+  }
+
+  /// Rebuild application tokens from a valid OAuth token, without passwords.
+  Future<DidupSession> bootstrapSession(DidupSession session) async {
+    final result = await _loadSession(
+      _OAuthToken(
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        tokenType: session.tokenType,
+        scopes: session.scopes,
+        expiresAt: session.expiresAt,
+      ),
+      session.schoolCode,
+      session.username,
+    );
+    if (session.activeProfileId != null &&
+        !result.session.profiles.containsKey(session.activeProfileId)) {
+      throw const PermissionDeniedFailure(
+        'Il profilo selezionato non è disponibile nella nuova sessione.',
+      );
+    }
+    return result.session.copyWith(activeProfileId: session.activeProfileId);
+  }
+
+  Future<RemoteLoginResult> _loadSession(
+    _OAuthToken oauth,
+    String schoolCode,
+    String username,
+  ) async {
+    final rawProfiles = await _applicationLogin(oauth);
+    final profileSessions = <String, DidupProfileSession>{};
+    final profiles = <StudentProfile>[];
+    String? refreshUsername;
+
+    for (var index = 0; index < rawProfiles.length; index++) {
+      final loginContext = _stringMap(rawProfiles[index]);
+      refreshUsername ??= _optionalString(loginContext['username']);
+      final profilePayload = await _loadProfile(oauth, loginContext);
+      final profile = _parseProfile(
+        profilePayload,
+        schoolMinistryCode: _requiredString(loginContext, 'codMin'),
+      );
+      if (profileSessions.containsKey(profile.sourceProfileId)) {
+        throw const InvalidPayloadFailure('Profilo DidUP duplicato.');
+      }
+      profileSessions[profile.sourceProfileId] = DidupProfileSession(
+        sourceProfileId: profile.sourceProfileId,
+        appAuthToken: _requiredString(loginContext, 'token'),
+        schoolMinistryCode: _requiredString(loginContext, 'codMin'),
+        notificationOptions: _parseOptions(loginContext['opzioni']),
+        displayLabel: profile.displayLabel,
+        gender: profile.gender,
+        schoolClassLabel: profile.schoolClassLabel,
+        academicYear: profile.academicYear,
+        academicYearStart: profile.academicYearStart,
+      );
+      profiles.add(profile);
+    }
+
+    if (profiles.isEmpty) {
+      throw const InvalidPayloadFailure(
+        'Il login non ha restituito profili selezionabili.',
+      );
+    }
+
+    return RemoteLoginResult(
+      session: DidupSession(
+        accessToken: oauth.accessToken,
+        refreshToken: oauth.refreshToken,
+        tokenType: oauth.tokenType,
+        scopes: oauth.scopes,
+        expiresAt: oauth.expiresAt,
+        schoolCode: schoolCode,
+        username: refreshUsername ?? username,
+        usesFamiglia: true,
+        profiles: profileSessions,
+      ),
+      profiles: List<StudentProfile>.unmodifiable(profiles),
+    );
   }
 
   _PkceAttempt _createPkceAttempt() {
@@ -331,18 +366,13 @@ final class DioDidupAuthService implements DidupAuthService {
   Future<List<Object?>> _applicationLogin(_OAuthToken oauth) async {
     final response = await _dio.postUri<Object?>(
       _config.apiUri('login'),
-      data: <String, Object>{
-        'lista-opzioni-notifiche': '{}',
-        'lista-x-auth-token': '[]',
-        'clientID': _randomString(163),
-      },
+      data: <String, Object>{},
       options: Options(
         headers: <String, Object>{
           'authorization': 'Bearer ${oauth.accessToken}',
-          'argo-client-version': _config.clientVersion,
+          'argo-client-version': _config.famigliaVersion,
+          'os-type': 'WEB',
           'content-type': '${Headers.jsonContentType}; charset=utf-8',
-          if (oauth.expiresAt case final expiresAt?)
-            'x-date-exp-auth': _formatArgoDate(expiresAt),
         },
       ),
     );
@@ -372,11 +402,10 @@ final class DioDidupAuthService implements DidupAuthService {
         options: Options(
           headers: <String, Object>{
             'authorization': 'Bearer ${oauth.accessToken}',
-            'argo-client-version': _config.clientVersion,
+            'argo-client-version': _config.famigliaVersion,
+            'os-type': 'WEB',
             'x-auth-token': _requiredString(loginContext, 'token'),
             'x-cod-min': _requiredString(loginContext, 'codMin'),
-            if (oauth.expiresAt case final expiresAt?)
-              'x-date-exp-auth': _formatArgoDate(expiresAt),
           },
         ),
       ),
@@ -505,15 +534,6 @@ List<Object?> _extractLoginRows(Map<String, Object?> body) {
   }
 
   return visit(body) ?? const <Object?>[];
-}
-
-String _formatArgoDate(DateTime value) {
-  final local = value.toLocal();
-  String two(int number) => number.toString().padLeft(2, '0');
-  String three(int number) => number.toString().padLeft(3, '0');
-  return '${local.year}-${two(local.month)}-${two(local.day)} '
-      '${two(local.hour)}:${two(local.minute)}:${two(local.second)}.'
-      '${three(local.millisecond)}';
 }
 
 final class _PkceAttempt {

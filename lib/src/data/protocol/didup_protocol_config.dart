@@ -5,6 +5,7 @@ final class DidupProtocolConfig {
     required this.oauthClientId,
     required this.redirectUri,
     required this.clientVersion,
+    this.famigliaVersion = '4.1.0',
     Uri? apiBaseUri,
     Uri? oauthAuthorizeUri,
     Uri? oauthTokenUri,
@@ -20,7 +21,7 @@ final class DidupProtocolConfig {
     this.refreshLeeway = const Duration(seconds: 90),
   }) : apiBaseUri =
            apiBaseUri ??
-           Uri.parse('https://www.portaleargo.it/appfamiglia/api/rest/'),
+           Uri.parse('https://didattica.portaleargo.it/famiglia/api/'),
        oauthAuthorizeUri =
            oauthAuthorizeUri ??
            Uri.parse('https://auth.portaleargo.it/oauth2/auth'),
@@ -30,7 +31,9 @@ final class DidupProtocolConfig {
        ssoLoginUri =
            ssoLoginUri ??
            Uri.parse('https://www.portaleargo.it/auth/sso/login') {
-    if (oauthClientId.trim().isEmpty || !isValidClientVersion(clientVersion)) {
+    if (oauthClientId.trim().isEmpty ||
+        !isValidClientVersion(clientVersion) ||
+        !isValidClientVersion(famigliaVersion)) {
       throw const CompatibilityFailure(
         'Client OAuth e versione devono provenire da una configurazione verificata.',
       );
@@ -63,6 +66,7 @@ final class DidupProtocolConfig {
 
   /// Valore verificato nel gate di compatibilita, mai auto-inventato.
   final String clientVersion;
+  final String famigliaVersion;
   final List<String> oauthScopes;
   final String appRefreshProcedure;
   final Duration refreshLeeway;

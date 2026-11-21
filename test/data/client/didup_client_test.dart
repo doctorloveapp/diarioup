@@ -105,7 +105,7 @@ void main() {
       final store = MemorySessionStore(testSession(expiresAt: now));
       final initial = store.value;
       final adapter = ScriptedAdapter((request) {
-        expect(request.uri.path.endsWith('/auth/refresh-token'), isTrue);
+        expect(request.uri.path, '/oauth2/token');
         throw DioException(
           requestOptions: request,
           type: DioExceptionType.receiveTimeout,
@@ -141,7 +141,9 @@ void main() {
       var refreshCalls = 0;
       var dashboardCalls = 0;
       final adapter = ScriptedAdapter((RequestOptions request) {
-        if (request.uri.path.endsWith('/auth/refresh-token')) {
+        final bootstrap = famigliaBootstrapResponse(request);
+        if (bootstrap != null) return bootstrap;
+        if (request.uri.path == '/oauth2/token') {
           refreshCalls++;
           return jsonResponse(
             200,
@@ -194,7 +196,7 @@ void main() {
       expect(dashboardCalls, 1);
       expect(store.value!.accessToken, 'synthetic-refreshed-access');
       expect(store.value!.refreshToken, 'synthetic-rotated-refresh');
-      expect(store.writeCount, 1);
+      expect(store.writeCount, 2);
     },
   );
 
@@ -232,6 +234,8 @@ void main() {
     var dashboardCalls = 0;
     var refreshCalls = 0;
     final adapter = ScriptedAdapter((RequestOptions request) {
+      final bootstrap = famigliaBootstrapResponse(request);
+      if (bootstrap != null) return bootstrap;
       if (request.uri.path.endsWith('/dashboard/dashboard')) {
         dashboardCalls++;
         if (dashboardCalls == 1) {
@@ -247,7 +251,7 @@ void main() {
           },
         });
       }
-      if (request.uri.path.endsWith('/auth/refresh-token')) {
+      if (request.uri.path == '/oauth2/token') {
         refreshCalls++;
         return jsonResponse(200, <String, Object?>{
           'access_token': 'refreshed-after-401',

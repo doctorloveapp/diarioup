@@ -60,8 +60,10 @@ Registrare per ogni passaggio **OK**, **KO** e una nota priva di dati personali.
    - Aprire l'app e completare onboarding e login.
    - Verificare che il campo password non venga ripopolato dopo essere usciti e
      rientrati nell'app.
-   - In ambiente reale, verificare che una sessione scaduta richieda nuovamente
-     l'accesso lasciando consultabile il diario locale.
+   - Chiudere e riaprire l'app: la sessione deve essere ripristinata. Alla
+     scadenza dell'access token, il rinnovo OAuth deve avvenire senza password.
+     Se il refresh token è revocato, verificare la richiesta di nuovo accesso
+     lasciando consultabile il diario locale.
 2. **Agenda e filtri**
    - Verificare le sezioni Oggi, Domani, Prossimi giorni e Senza scadenza.
    - Controllare le etichette `Oggi`, `Domani`, `Tra N giorni` e gli stati
@@ -174,3 +176,36 @@ offline persistono dopo il riavvio, tutti i percorsi della sezione 3 risultano
 OK e i casi permesso negato, consegna, completamento, reboot e cambio fuso della
 sezione 4 sono stati verificati. Il collaudo DidUP deve usare esclusivamente un
 account autorizzato e dati opportunamente minimizzati nel report.
+
+## 8. Migrazione Famiglia Web — versione 1.8.1+19
+
+Questa versione sostituisce le API mobile che restituiscono HTTP 503 con le API
+Famiglia Web. I test automatici usano risposte sintetiche: il login e il rinnovo
+effettivi devono essere confermati con un account autorizzato sul dispositivo.
+
+1. Installare l'APK come aggiornamento, senza disinstallare la versione precedente.
+   Verificare in **Info & Privacy** la versione **1.8.1+19**.
+2. Riaprire l'app e controllare compiti, note, checklist e personalizzazioni già
+   presenti. La conversione della sessione avviene alla prima richiesta di rete.
+3. Sincronizzare e verificare i compiti con il registro ufficiale. Se Argo ha
+   revocato il vecchio refresh token, eseguire una volta il login; non cancellare
+   i dati dell'app per risolvere un errore temporaneo di rete.
+4. Con un account genitore con più figli, verificare il profilo selezionato e la
+   classe reale nell'intestazione del PDF. La conversione non deve selezionare
+   automaticamente un altro figlio se quello precedente non è disponibile.
+5. Chiudere e riaprire l'app anche dopo la scadenza dell'access token: se il
+   refresh token è valido, sincronizzare senza reinserire la password.
+6. Ripetere l'apertura in modalità aereo: i dati locali devono restare leggibili.
+   Riattivare la rete e verificare il nuovo tentativo di sincronizzazione.
+
+Verifica automatica del 21 novembre 2026: 116 test Flutter e 14 test Python
+superati; analisi statica Dart senza segnalazioni. La verifica autenticata su
+dispositivo rimane da eseguire.
+
+Artefatto verificato: `dist/DiarioUp-1.8.1+19-release.apk` (73.317.245 byte).
+SHA-256: `2b2ac1f0f95025eef423a2e4fc491261aa8b668000b185078a6927888fd7149c`.
+Firma APK v2 valida, certificato identico alla release precedente, package
+`it.diarioup.diarioup`, versionCode `19`, modalità debug disattivata.
+Controllati endpoint Web nel binario, font Inter/Material, icona promemoria,
+manifest degli asset nativi e librerie SQLite per le tre architetture;
+nessun file di test o segreto nell'archivio.

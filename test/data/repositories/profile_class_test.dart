@@ -112,13 +112,15 @@ void main() {
     () async {
       final store = MemorySessionStore(session().copyWith(expiresAt: now));
       final adapter = ScriptedAdapter((request) {
-        if (request.uri.path.endsWith('/auth/refresh-token')) {
+        if (request.uri.path == '/oauth2/token') {
           return jsonResponse(200, {
             'access_token': 'synthetic-refreshed-access',
             'refresh_token': 'synthetic-rotated-refresh',
             'expires_in': 1800,
           });
         }
+        final bootstrap = famigliaBootstrapResponse(request, twoProfiles: true);
+        if (bootstrap != null) return bootstrap;
         expect(
           request.headers['authorization'],
           'Bearer synthetic-refreshed-access',

@@ -121,6 +121,17 @@ REPOSITORIES: tuple[RepositoryRule, ...] = (
             "custom_components/argo_family_dashboard/manifest.json",
         ),
     ),
+    RepositoryRule(
+        slug="DanielVd/portaleargo-api",
+        critical_paths=(
+            "src/BaseClient.ts",
+            "src/util/getCode.ts",
+            "src/util/getToken.ts",
+            "src/util/loginRedirect.ts",
+            "src/util/Constants.ts",
+        ),
+        high_paths=("src/types/famigliaApiTypes.ts", "scripts/e2e-readonly.mjs"),
+    ),
 )
 
 

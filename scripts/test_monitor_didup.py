@@ -140,6 +140,9 @@ class MonitorDidupTest(unittest.TestCase):
         self.assertEqual(current_head, head)
 
     def test_repository_paths_have_expected_priority(self):
+        web_rule = next(rule for rule in monitor.REPOSITORIES if rule.slug == "DanielVd/portaleargo-api")
+        self.assertEqual(monitor.path_severity("src/BaseClient.ts", web_rule), monitor.Severity.CRITICAL)
+        self.assertEqual(monitor.path_severity("src/types/famigliaApiTypes.ts", web_rule), monitor.Severity.HIGH)
         rule = monitor.REPOSITORIES[0]
         self.assertEqual(
             monitor.path_severity("tests/test_rete.py", rule),

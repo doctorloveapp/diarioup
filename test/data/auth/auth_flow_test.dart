@@ -13,8 +13,9 @@ void main() {
       final original = _browserSsoAdapter();
       var applicationCalls = 0;
       final adapter = ScriptedAdapter((request) {
-        if (request.uri.path.startsWith('/appfamiglia/api/rest/')) {
-          expect(request.headers['argo-client-version'], '1.30.3');
+        if (request.uri.path.startsWith('/famiglia/api/')) {
+          expect(request.headers['argo-client-version'], '4.1.0');
+          expect(request.headers['os-type'], 'WEB');
           applicationCalls++;
         }
         return original.handler(request);
@@ -119,7 +120,7 @@ void main() {
       for (final failedPath in [
         '/auth/sso/login',
         '/oauth2/token',
-        '/appfamiglia/api/rest/login',
+        '/famiglia/api/login',
       ]) {
         final original = _browserSsoAdapter();
         var failedCalls = 0;
@@ -254,7 +255,8 @@ void main() {
           });
         }
         if (request.uri.path.endsWith('/login')) {
-          expect(request.headers['x-date-exp-auth'], isNotNull);
+          expect(request.headers['os-type'], 'WEB');
+          expect(request.data, isEmpty);
           return jsonResponse(200, <String, Object?>{
             'success': true,
             // Dal 28/09/2026 Argo puo annidare le righe in contenitori
@@ -280,7 +282,7 @@ void main() {
           });
         }
         if (request.uri.path.endsWith('/profilo')) {
-          expect(request.headers['x-date-exp-auth'], isNotNull);
+          expect(request.headers['os-type'], 'WEB');
           final appToken = request.headers['x-auth-token'];
           final suffix = appToken == 'synthetic-app-token-1' ? '1' : '2';
           return jsonResponse(200, <String, Object?>{
