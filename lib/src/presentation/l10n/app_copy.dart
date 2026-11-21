@@ -130,6 +130,17 @@ abstract final class AppCopy {
   static const String syncStatus = 'Agenda locale aggiornata';
   static const String syncInProgress = 'Sincronizzazione in corso';
   static const String syncError = 'Sincronizzazione non riuscita';
+  static const String syncSignInAgain =
+      'La sessione DidUP non è più valida. Accedi di nuovo; i dati locali restano disponibili.';
+  static const String syncPermissionDenied =
+      'DidUP non consente l’accesso al profilo. Verifica l’accesso dal portale ufficiale.';
+  static const String syncRateLimited =
+      'DidUP ha ricevuto troppe richieste. Riprova più tardi.';
+  static const String syncCompatibilityError =
+      'Il collegamento DidUP richiede una verifica di compatibilità.';
+  static const String syncPayloadError =
+      'DidUP ha restituito dati in un formato non riconosciuto. Il diario locale è conservato.';
+  static const String signInAgain = 'Accedi di nuovo';
   static const String retry = 'Riprova';
   static const String agendaLoadError =
       'Non è stato possibile leggere l’agenda locale.';

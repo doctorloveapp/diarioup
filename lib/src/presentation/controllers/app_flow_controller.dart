@@ -60,6 +60,8 @@ final class AppFlowController extends Notifier<AppFlowState> {
   Future<void> authenticate(StudentProfile profile) async {
     final repository = await ref.read(didupRepositoryProvider.future);
     await repository.rememberActiveProfile(profile.sourceProfileId);
+    // A new login for the same child must not reuse a cached sync failure.
+    ref.invalidate(syncProfileProvider(profile.sourceProfileId));
     state = state.copyWith(onboardingCompleted: true, activeProfile: profile);
   }
 

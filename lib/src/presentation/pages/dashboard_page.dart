@@ -15,6 +15,7 @@ import '../../domain/use_cases/share_homework.dart';
 import '../controllers/app_flow_controller.dart';
 import '../design_system/diarioup_tokens.dart';
 import '../formatters/student_greeting.dart';
+import '../formatters/sync_feedback.dart';
 import '../l10n/app_copy.dart';
 import '../providers/app_providers.dart';
 import '../routing/app_router.dart';
@@ -94,6 +95,7 @@ final class _DashboardPageState extends ConsumerState<DashboardPage>
         profileId: profileId,
         profileLabel: profile?.displayLabel ?? AppCopy.appName,
         profileGender: profile?.gender,
+        onReauthenticate: _signOut,
       ),
       profileId == null
           ? const SizedBox.shrink()
@@ -472,11 +474,13 @@ final class _AgendaPanel extends ConsumerStatefulWidget {
     required this.profileId,
     required this.profileLabel,
     required this.profileGender,
+    required this.onReauthenticate,
   });
 
   final String? profileId;
   final String profileLabel;
   final StudentGender? profileGender;
+  final Future<void> Function() onReauthenticate;
 
   @override
   ConsumerState<_AgendaPanel> createState() => _AgendaPanelState();
@@ -504,7 +508,9 @@ final class _AgendaPanelState extends ConsumerState<_AgendaPanel> {
         _SyncStatus(
           isLoading: sync.isLoading,
           hasError: sync.hasError || status.value?.errorCode != null,
+          error: sync.error,
           onRetry: () => ref.invalidate(syncProfileProvider(profileId)),
+          onReauthenticate: widget.onReauthenticate,
         ),
         const SizedBox(height: DiarioUpSpacing.lg),
         TextField(
@@ -622,12 +628,16 @@ final class _SyncStatus extends StatelessWidget {
   const _SyncStatus({
     required this.isLoading,
     required this.hasError,
+    required this.error,
     required this.onRetry,
+    required this.onReauthenticate,
   });
 
   final bool isLoading;
   final bool hasError;
+  final Object? error;
   final VoidCallback onRetry;
+  final Future<void> Function() onReauthenticate;
 
   @override
   Widget build(BuildContext context) {
@@ -645,16 +655,25 @@ final class _SyncStatus extends StatelessWidget {
         const SizedBox(width: DiarioUpSpacing.xs),
         Expanded(
           child: Text(
-            hasError
-                ? AppCopy.syncError
-                : isLoading
+            isLoading
                 ? AppCopy.syncInProgress
+                : hasError
+                ? syncFailureMessage(error)
                 : AppCopy.syncStatus,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
-        if (hasError)
-          TextButton(onPressed: onRetry, child: const Text(AppCopy.retry)),
+        if (hasError && !isLoading)
+          TextButton(
+            onPressed: syncRequiresAuthentication(error)
+                ? onReauthenticate
+                : onRetry,
+            child: Text(
+              syncRequiresAuthentication(error)
+                  ? AppCopy.signInAgain
+                  : AppCopy.retry,
+            ),
+          ),
       ],
     );
   }
