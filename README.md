@@ -10,9 +10,10 @@ Versione corrente: **1.8.1+19**.
 La release usa l'API Famiglia Web su `didattica.portaleargo.it/famiglia/api/`,
 con versione protocollo **4.1.0** e `os-type: WEB`. Sostituisce gli endpoint
 mobile `appfamiglia/api/rest`, che restituiscono HTTP 503 dopo l'autenticazione.
-Il flusso OAuth/PKCE rimane invariato. Il parametro di build
-`DIDUP_CLIENT_VERSION` mantiene il valore ufficiale DidUP **1.30.3**; è distinto
-dalla versione del protocollo Web. Entrambi sono validati come versioni numeriche.
+Il flusso OAuth/PKCE rimane invariato. Nell'APK **1.8.1+19** il parametro di build
+`DIDUP_CLIENT_VERSION` contiene **1.30.3** come metadato dell'adattatore; gli
+header delle API Famiglia usano invece **4.1.0**. Entrambi sono validati come
+versioni numeriche.
 
 Le sessioni precedenti vengono convertite al primo accesso alla rete, conservando
 il profilo selezionato. Il rinnovo usa il grant OAuth `refresh_token`, seguito
@@ -139,6 +140,26 @@ La baseline del fork è `78e5c71423685cec1469bc3c8ed0d9d8d3e8ac0f`.
 Le issue HTTP 503 degli altri repository restano monitorate: non vengono
 ignorate automaticamente dopo questa migrazione. Per attivare su GitHub le
 modifiche alla sentinella, pubblicare anche script e baseline aggiornati.
+
+Verifica del **25 novembre 2026**: la versione ufficiale DidUP **1.30.4**
+([App Store](https://itunes.apple.com/lookup?bundleId=it.argosoft.didup.famiglia.new))
+riporta correzioni per PFI e conteggio delle prenotazioni dei ricevimenti.
+Le teste dei quattro repository monitorati sono invariate; le issue
+[`DTrombett/portaleargo-api#303`](https://github.com/DTrombett/portaleargo-api/issues/303)
+e [`Rocciadura/didupAPI-wrapper#6`](https://github.com/Rocciadura/didupAPI-wrapper/issues/6)
+sono gli stessi avvisi sugli endpoint mobile già sostituiti in DiarioUp.
+Da questi segnali non emerge una modifica necessaria al protocollo Web:
+si mantiene l'APK **1.8.1+19**, senza generare la **1.8.2+20**.
+
+La baseline ora riconosce DidUP **1.30.4** e gli aggiornamenti delle issue già
+esaminati fino al controllo del 25 novembre. Le issue **#303** e **#6** non sono
+escluse: nuovi aggiornamenti, commit e versioni ufficiali continuano a generare
+avvisi. Lo script scarta anche eventuali risultati API con data già esaminata;
+date mancanti o illeggibili restano segnalabili. Il limite temporale della nuova
+baseline viene acquisito prima delle richieste, così un aggiornamento durante
+il controllo resta rilevabile nel controllo successivo. La baseline viene
+salvata solo con `--update-baseline`, dopo la revisione; il workflow non avanza
+automaticamente gli avvisi ancora da esaminare.
 
 Il progetto segue `Presentation → Domain ← Data`; Drift cifrato è la single
 source of truth. Per la verifica locale:

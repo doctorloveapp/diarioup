@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -28,6 +29,86 @@ class FakeClient:
 
 
 class MonitorDidupTest(unittest.TestCase):
+    def test_reviewed_503_snapshots_are_not_reported_again(self):
+        since = "2026-11-25T16:24:58Z"
+        for slug, number, updated_at in (
+            ("DTrombett/portaleargo-api", 303, "2026-11-18T04:47:36Z"),
+            ("Rocciadura/didupAPI-wrapper", 6, "2026-11-21T06:53:25Z"),
+        ):
+            with self.subTest(repository=slug):
+                rule = next(rule for rule in monitor.REPOSITORIES if rule.slug == slug)
+                repo_url = f"/repos/{slug}"
+                client = FakeClient({
+                    f"{repo_url}/commits/main": {"sha": "same-head"},
+                    f"{repo_url}/issues?": [
+                        {"number": number, "title": "Login 503", "updated_at": updated_at},
+                    ],
+                    repo_url: {"default_branch": "main"},
+                })
+                findings, _ = monitor.check_repository(
+                    client, rule, {slug: {"headSha": "same-head"}}, since,
+                )
+                self.assertEqual(findings, [])
+                # A NEW update to the same issue must alert again.
+                client.responses[f"{repo_url}/issues?"][0]["updated_at"] = "2026-11-26T06:00:00Z"
+                findings, _ = monitor.check_repository(
+                    client, rule, {slug: {"headSha": "same-head"}}, since,
+                )
+                self.assertEqual(len(findings), 1)
+                self.assertEqual(findings[0].severity, monitor.Severity.CRITICAL)
+
+    def test_issue_cutoff_is_exclusive_and_compares_timezones(self):
+        issues = [
+            {"number": 1, "updated_at": "2026-11-25T16:24:58Z"},
+            {"number": 2, "updated_at": "2026-11-25T17:24:58+01:00"},
+            {"number": 3, "updated_at": "2026-11-25T16:24:59Z"},
+        ]
+        client = FakeClient({"/issues?": issues})
+        result = monitor.fetch_changed_issues(client, "example/repo", "2026-11-25T16:24:58Z")
+        self.assertEqual([issue["number"] for issue in result], [3])
+
+    def test_unknown_issue_timestamps_do_not_hide_potential_alerts(self):
+        issues = [{"number": index, "updated_at": value} for index, value in enumerate(
+            (None, "invalid", "2026-11-25T16:24:58"),
+        )]
+        client = FakeClient({"/issues?": issues})
+        result = monitor.fetch_changed_issues(client, "example/repo", "2026-11-25T16:24:58Z")
+        self.assertEqual(result, issues)
+        with self.assertRaises(monitor.MonitorError):
+            monitor.fetch_changed_issues(client, "example/repo", "invalid")
+
+    def test_scan_boundary_precedes_network_reads(self):
+        started = datetime(2026, 11, 25, 16, 24, 58, tzinfo=timezone.utc)
+        finished = datetime(2026, 11, 25, 16, 25, 30, tzinfo=timezone.utc)
+
+        class Clock(datetime):
+            instant = started
+
+            @classmethod
+            def now(cls, tz=None):
+                return cls.instant
+
+        class UpdatingClient:
+            def get_json(self, url):
+                Clock.instant = finished
+                if "itunes.apple.com" in url:
+                    return {"results": [{"version": "1.30.4"}]}
+                if "/commits/" in url:
+                    return {"sha": "same-head"}
+                if "/issues?" in url:
+                    return []
+                return {"default_branch": "main"}
+
+        baseline = {
+            "checkedAt": "2026-11-24T00:00:00Z",
+            "officialAppVersion": "1.30.4",
+            "repositories": {rule.slug: {"headSha": "same-head"} for rule in monitor.REPOSITORIES},
+        }
+        with patch.object(monitor, "datetime", Clock):
+            findings, updated = monitor.monitor(UpdatingClient(), baseline)
+        self.assertEqual(findings, [])
+        self.assertEqual(updated["checkedAt"], "2026-11-25T16:24:58Z")
+
     def _repository_findings(self, rule, issues, files=()):
         repository_url = f"/repos/{rule.slug}"
         client = FakeClient({
@@ -175,6 +256,25 @@ class MonitorDidupTest(unittest.TestCase):
             }
         )
         self.assertEqual(monitor.fetch_official_app_version(client), "1.31.0")
+
+    def test_new_official_version_still_alerts_after_baseline_review(self):
+        baseline = {
+            **monitor.load_baseline(monitor.DEFAULT_BASELINE),
+            "officialAppVersion": "1.30.4",
+        }
+        responses = {"itunes.apple.com": {"results": [{"version": "1.30.5"}]}}
+        for rule in monitor.REPOSITORIES:
+            repo_url = f"/repos/{rule.slug}"
+            responses[f"{repo_url}/commits/main"] = {
+                "sha": baseline["repositories"][rule.slug]["headSha"],
+            }
+            responses[f"{repo_url}/issues?"] = []
+            responses[repo_url] = {"default_branch": "main"}
+        findings, _ = monitor.monitor(FakeClient(responses), baseline)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].source, "Apple App Store")
+        self.assertEqual(findings[0].severity, monitor.Severity.CRITICAL)
+        self.assertIn("nuova: 1.30.5", findings[0].details)
 
     def test_email_body_contains_only_relevant_findings(self):
         findings = [

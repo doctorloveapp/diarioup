@@ -318,6 +318,9 @@ def fetch_changed_issues(
     repository: str,
     since: str,
 ) -> list[dict[str, Any]]:
+    cutoff = _utc_timestamp(since)
+    if cutoff is None:
+        raise MonitorError("checkedAt della baseline non è una data con fuso orario.")
     encoded = quote(repository, safe="/")
     query = urlencode(
         {
@@ -335,7 +338,23 @@ def fetch_changed_issues(
         issue
         for issue in payload
         if isinstance(issue, dict) and "pull_request" not in issue
+        # Defend against cached/overlapping API pages without ignoring an issue
+        # permanently. Unknown timestamps stay visible rather than hiding alerts.
+        and (
+            (updated_at := _utc_timestamp(issue.get("updated_at"))) is None
+            or updated_at > cutoff
+        )
     ]
+
+
+def _utc_timestamp(value: object) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed.astimezone(timezone.utc) if parsed.tzinfo is not None else None
 
 
 def issue_severity(issue: Mapping[str, Any]) -> Severity:
@@ -409,6 +428,9 @@ def monitor(
     client: JsonHttpClient,
     baseline: Mapping[str, Any],
 ) -> tuple[list[Finding], dict[str, Any]]:
+    # Capture the boundary BEFORE network reads: an issue updated during this
+    # run must still be eligible on the next run, even if already fetched here.
+    scan_started_at = datetime.now(timezone.utc).replace(microsecond=0)
     checked_at = baseline.get("checkedAt")
     if not isinstance(checked_at, str) or not checked_at:
         raise MonitorError("checkedAt assente dalla baseline.")
@@ -443,10 +465,7 @@ def monitor(
 
     new_baseline: dict[str, Any] = {
         "schemaVersion": 1,
-        "checkedAt": datetime.now(timezone.utc)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z"),
+        "checkedAt": scan_started_at.isoformat().replace("+00:00", "Z"),
         "officialAppVersion": official_version,
         "repositories": current_heads,
     }
